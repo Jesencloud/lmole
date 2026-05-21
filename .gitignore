@@ -1,0 +1,29 @@
+# --- Python 核心 ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+*.so
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# --- Rust (lmo-core 引擎) ---
+lmo-core/target/
+
+# --- 操作系统与编辑器 ---
+.DS_Store
+.DS_Store?
+._*
+.vscode/
+.idea/
+*~
+*.swp
+*.tmp
+*.log
+
+# --- 敏感信息 ---
+.env
+.python-version

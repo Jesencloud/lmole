@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+import sys
+import os
+
+# 获取脚本的真实物理路径
+REAL_PATH = os.path.realpath(__file__)
+REAL_DIR = os.path.dirname(REAL_PATH)
+
+# 将项目根目录加入 Python 搜索路径，这样 src 就能作为一个 package 被识别
+sys.path.insert(0, REAL_DIR)
+
+try:
+    from src.main import main
+    if __name__ == "__main__":
+        main()
+except ImportError as e:
+    print(f"Error: Could not find lmole source modules in {REAL_DIR}")
+    print(f"Debug info: {e}")
+    sys.exit(1)
+except KeyboardInterrupt:
+    print("\n\n🚫 Process interrupted by user.")
+    sys.exit(130)
