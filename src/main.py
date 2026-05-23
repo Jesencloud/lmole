@@ -77,8 +77,10 @@ def run_clean(dry_run=False):
 
 
 from .manage.uninstall import UninstallManager
+from .manage.self_uninstall import run_self_uninstall
 from .ui.navigator import PaginatedSelector, UninstallSelector
 
+# ANSI Colors
 
 def run_purge(dry_run=False):
     while True:
@@ -262,7 +264,7 @@ from .core.whitelist import add_to_whitelist, remove_from_whitelist
 
 def main():
     parser = argparse.ArgumentParser(description="lmole - Linux System Optimizer (Inspired by Mole)")
-    parser.add_argument("command", choices=["clean", "purge", "uninstall", "optimize", "analyze", "status", "whitelist", "authorize", "all"], nargs="?", default=None)
+    parser.add_argument("command", choices=["clean", "purge", "uninstall", "optimize", "analyze", "status", "whitelist", "authorize", "remove", "all"], nargs="?", default=None)
     parser.add_argument("--dry-run", action="store_true", help="Preview changes without deleting")
     parser.add_argument("--version", action="version", version="lmole 0.5.0")
     
@@ -335,6 +337,9 @@ def main():
 
     if args.command in ("purge", "all"):
         run_purge(args.dry_run)
+
+    if args.command == "remove":
+        run_self_uninstall(args.dry_run)
 
 if __name__ == "__main__":
     main()
