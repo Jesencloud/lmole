@@ -72,6 +72,6 @@ def bytes_to_human(n_bytes: int) -> str:
     """Converts bytes to human readable format (Base-10, same as macOS/Modern Linux)."""
     for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
         if n_bytes < 1000:
-            return f"{n_bytes:.1f}{unit}" if unit != 'B' else f"{int(n_bytes)}{unit}"
+            return f"{n_bytes:.1f} {unit}" if unit != 'B' else f"{int(n_bytes)} {unit}"
         n_bytes /= 1000
-    return f"{n_bytes:.1f}PB"
+    return f"{n_bytes:.1f} PB"

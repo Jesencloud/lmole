@@ -13,13 +13,41 @@ BLUE = "\033[1;34m"
 CYAN = "\033[1;36m"
 MAGENTA = "\033[1;35m"
 YELLOW = "\033[1;33m"
+LIGHT_BLUE = "\033[0;94m"
+
+def get_display_width(s: str) -> int:
+    """Calculates visual width of a string, accounting for CJK characters."""
+    width = 0
+    for char in s:
+        # Simple heuristic for CJK and wide characters
+        if ord(char) > 0x1100:
+            width += 2
+        else:
+            width += 1
+    return width
+
+def pad_and_truncate(s: str, target_width: int) -> str:
+    """Truncates and pads a string to a target visual width."""
+    current_width = get_display_width(s)
+    if current_width <= target_width:
+        return s + " " * (target_width - current_width)
+    
+    # Truncate logic
+    res = ""
+    res_width = 0
+    for char in s:
+        char_width = 2 if ord(char) > 0x1100 else 1
+        if res_width + char_width + 3 > target_width:
+            break
+        res += char
+        res_width += char_width
+    return res + "..." + " " * (target_width - (res_width + 3))
 
 def draw_bar(percentage: float, width: int = 20, force_color: str = None) -> str:
     safe_percent = max(0.0, min(100.0, percentage))
     filled = int(width * safe_percent / 100)
     empty = width - filled
     
-    # Dynamic color logic if no specific color is forced
     if force_color:
         color = force_color
     else:
@@ -30,7 +58,7 @@ def draw_bar(percentage: float, width: int = 20, force_color: str = None) -> str
         else:
             color = "\033[1;31m" # RED
             
-    return f"{WHITE}[{color}{'■' * filled}{RESET}{GRAY}{'□' * empty}{WHITE}]{RESET}"
+    return f"{color}{'▬' * filled}{RESET}{GRAY}{'▬' * empty}{RESET}"
 
 class Navigator:
     """Handles raw terminal input and basic TUI navigation."""
@@ -121,7 +149,9 @@ class AnalyzeSelector:
             bar = draw_bar(item['percent'], force_color=item.get('color'))
             
             style = "\033[1;37m" if is_hover else ""
-            print(f"{cursor} {i+1:2}. {bar}  {item['percent']:>5.1f}%  |  📁 {style}{item['name']:<20}{RESET} {WHITE}{bytes_to_human(item['size']):>10}{RESET}")
+            name_padded = pad_and_truncate(item['name'], 30)
+            
+            print(f"{cursor} {i+1:2}. {bar}  {item['percent']:>5.1f}%  |  📁 {style}{name_padded}{RESET}     {WHITE}{bytes_to_human(item['size']):>12}{RESET}")
 
         print("\n" + "-" * 75)
         order_icon = "↓" if self.sort_reverse else "↑"
@@ -257,8 +287,10 @@ class UninstallSelector:
             else:
                 name_style = ""
             
+            name_padded = pad_and_truncate(item['name'], 35)
+            
             time_str = self._format_time_ago(item['install_time'])
-            print(f"{cursor} {checkbox} {name_style}{item['name']:<35}{RESET} {item['size_str']:>10} | {time_str}")
+            print(f"{cursor} {checkbox} {name_style}{name_padded}{RESET}     {item['size_str']:>12} | {time_str}")
         
         print("-" * 80)
         total_pages = (len(self.items) + self.page_size - 1) // self.page_size
@@ -377,8 +409,10 @@ class CleanSelector:
             checkbox = "[\033[1;32m✓\033[0m]" if is_checked else "[ ]"
             style = "\033[1;36m" if is_hover else ""
             
+            name_padded = pad_and_truncate(item['name'], 25)
+                
             size_str = bytes_to_human(item['size']) if item['size'] > 0 else "Scan Result"
-            print(f"{cursor} {checkbox} {style}{item['name']:<25}{RESET} | {size_str:>10} | {GRAY}{item['desc']}{RESET}")
+            print(f"{cursor} {checkbox} {style}{name_padded}{RESET} |     {size_str:>12} | {GRAY}{item['desc']}{RESET}")
         
         print("-" * 65)
         print(f" Total Selected: \033[1;32m{bytes_to_human(total_freed)}\033[0m")

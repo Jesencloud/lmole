@@ -163,7 +163,7 @@ def _render_top_files(data):
     print(f"\033[1;33m🏆 Top {len(top_files)} Largest Files (Powered by Rust)\033[0m")
     print("-" * 60)
     for i, f in enumerate(top_files):
-        print(f"[{i+1:2}] {bytes_to_human(f['size_bytes']):>8} | {f['path']}")
+        print(f"[{i+1:2}] {bytes_to_human(f['size_bytes']):>12} | {f['path']}")
         if i >= 19: break
     input("\nPress Enter to return...")
 
@@ -180,6 +180,6 @@ def _run_top_files_view(search_path="~"):
     print(f"\033[1;33m🏆 Top {len(top_files)} Largest Files (Powered by Rust)\033[0m")
     print("-" * 60)
     for i, f in enumerate(top_files):
-        print(f"[{i+1:2}] {bytes_to_human(f['size_bytes']):>8} | {f['path']}")
+        print(f"[{i+1:2}] {bytes_to_human(f['size_bytes']):>12} | {f['path']}")
         if i >= 19: break
     input("\nPress Enter to return...")
