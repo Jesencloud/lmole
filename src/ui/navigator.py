@@ -121,28 +121,41 @@ class InteractiveMenu:
         finally: Navigator.show_cursor()
 
 class AnalyzeSelector:
-    def __init__(self, title, items, show_banner=None):
+    def __init__(self, title, items, show_banner=None, can_select=True):
         self.title = title
         self.items = items
         self.selected_index = 0
+        self.selected_items = set() # Multi-selection
         self.sort_reverse = True # Default: Largest to Smallest
         self.show_banner = show_banner
+        self.can_select = can_select
         self._sort_items()
 
     def _sort_items(self):
+        # Save selection state if possible, but for simplicity we'll just clear it for now
+        # because the indices change. A better way would be tracking by path.
+        self.selected_items.clear()
         self.items.sort(key=lambda x: x['size'], reverse=self.sort_reverse)
 
     def render(self):
         os.system('clear')
         if self.show_banner: self.show_banner()
         print(f"\n \033[1;35m{self.title}\033[0m")
-        print(f"{GRAY}Select a location to explore:{RESET}\n")
+        hint = f"{GRAY}Select a location to explore (Space to select multiple):{RESET}" if self.can_select else f"{GRAY}Select a category to explore:{RESET}"
+        print(f"{hint}\n")
         
         from ..core.file_ops import bytes_to_human
 
         for i, item in enumerate(self.items):
             is_hover = i == self.selected_index
+            is_selected = i in self.selected_items
+            
             cursor = "\033[1;36m▶\033[0m" if is_hover else " "
+            
+            checkbox_str = ""
+            if self.can_select:
+                checkbox = "[\033[1;32m✓\033[0m]" if is_selected else "[ ]"
+                checkbox_str = f"{checkbox} "
             
             # Pass color only if it's the root view (which defines 'color'), 
             # otherwise let the dynamic coloring take over
@@ -151,11 +164,19 @@ class AnalyzeSelector:
             style = "\033[1;37m" if is_hover else ""
             name_padded = pad_and_truncate(item['name'], 30)
             
-            print(f"{cursor} {i+1:2}. {bar}  {item['percent']:>5.1f}%  |  📁 {style}{name_padded}{RESET}     {WHITE}{bytes_to_human(item['size']):>12}{RESET}")
+            icon = item.get('icon', '📁')
+            age_hint = item.get('age_hint', '')
+            age_str = f" {GRAY}{age_hint}{RESET}" if age_hint else ""
+            
+            print(f"{cursor} {checkbox_str}{i+1:2}. {bar}  {item['percent']:>5.1f}%  |  {icon} {style}{name_padded}{RESET}     {WHITE}{bytes_to_human(item['size']):>12}{RESET}{age_str}")
 
         print("\n" + "-" * 75)
         order_icon = "↓" if self.sort_reverse else "↑"
-        print(f"\033[1;90m ↑↓→ | Enter | R Refresh | O Open | F Top Files | S Size {order_icon} | Q Exit to Menu\033[0m")
+        
+        if self.can_select:
+            print(f"\033[1;90m ↑↓←→ | Space Select | A All | Back | Enter Open/In | D Delete | R Refresh | S Sort {order_icon} | Q Exit\033[0m")
+        else:
+            print(f"\033[1;90m ↑↓→ | Enter Explore | R Refresh | S Sort {order_icon} | Q Exit\033[0m")
 
     def run(self):
         if not self.items: return None, None
@@ -167,12 +188,33 @@ class AnalyzeSelector:
                 if key == Navigator.UP: self.selected_index = (self.selected_index - 1) % len(self.items)
                 elif key == Navigator.DOWN: self.selected_index = (self.selected_index + 1) % len(self.items)
                 elif key == Navigator.LEFT: return "BACK", None
-                elif key in (Navigator.ENTER, Navigator.RIGHT): return "DRILL_DOWN", self.selected_index
+                elif key == Navigator.SPACE and self.can_select:
+                    if self.selected_index in self.selected_items: self.selected_items.remove(self.selected_index)
+                    else: self.selected_items.add(self.selected_index)
+                elif key.lower() == 'a' and self.can_select:
+                    if len(self.selected_items) == len(self.items):
+                        self.selected_items.clear()
+                    else:
+                        self.selected_items = set(range(len(self.items)))
+                elif key in (Navigator.ENTER, Navigator.RIGHT):
+                    # If items are selected, Enter opens the first one or we can change behavior
+                    # For now, stay with drill down on the current hovered item
+                    return "DRILL_DOWN", self.selected_index
+                elif key.lower() == 'd' and self.can_select:
+                    if not self.selected_items:
+                        continue # Do nothing if nothing is selected
+                    return "DELETE_BATCH", list(self.selected_items)
                 elif key.lower() == 's':
                     self.sort_reverse = not self.sort_reverse
                     self._sort_items()
                 elif key.lower() == 'r': return "REFRESH", None
-                elif key.lower() == 'o': return "OPEN", self.selected_index
+                elif key.lower() == 'o':
+                    if self.can_select:
+                        if self.selected_items:
+                            return "OPEN_BATCH", list(self.selected_items)
+                        return "OPEN", self.selected_index
+                    else:
+                        return "DRILL_DOWN", self.selected_index
                 elif key.lower() == 'f': return "SWITCH_FILES", None
                 elif key.lower() == 'q': return "QUIT", None
         finally: Navigator.show_cursor()
@@ -342,6 +384,70 @@ class UninstallSelector:
                         return [self.selected_index]
                     # Map IDs back to indices for the manager to process
                     return [i for i, item in enumerate(self.items) if item['id'] in self.selected_ids]
+                elif key.lower() == 'q': return []
+        finally: Navigator.show_cursor()
+
+class TopFilesSelector:
+    def __init__(self, title, items):
+        self.title = title
+        self.items = items
+        self.selected_index = 0
+        self.selected_items = set()
+
+    def render(self):
+        os.system('clear')
+        print(f"\n \033[1;33m{self.title}\033[0m")
+        print("-" * 85)
+        
+        from ..core.file_ops import bytes_to_human
+        
+        # Determine viewport to handle many files
+        viewport_size = 20
+        start_idx = max(0, self.selected_index - viewport_size // 2)
+        end_idx = min(len(self.items), start_idx + viewport_size)
+        if end_idx - start_idx < viewport_size:
+            start_idx = max(0, end_idx - viewport_size)
+
+        for i in range(start_idx, end_idx):
+            item = self.items[i]
+            is_hover = i == self.selected_index
+            is_checked = i in self.selected_items
+            
+            cursor = "\033[1;36m▶\033[0m" if is_hover else " "
+            checkbox = "[\033[1;32mX\033[0m]" if is_checked else "[ ]"
+            style = "\033[1;37m" if is_hover else ""
+            
+            path_str = str(item['path'])
+            # Show the tail of the path for better context
+            display_path = path_str
+            if len(display_path) > 60:
+                display_path = "..." + display_path[-57:]
+            
+            size_str = bytes_to_human(item['size_bytes'])
+            age_hint = item.get('age_hint', '')
+            age_str = f" {GRAY}{age_hint}{RESET}" if age_hint else ""
+            
+            print(f"{cursor} {checkbox} {WHITE}{size_str:>12}{RESET}{age_str} | {style}{display_path}{RESET}")
+        
+        print("-" * 85)
+        print(f" Total: {len(self.items)} files | Selected: {len(self.selected_items)}")
+        print(f"{GRAY} ↑/↓: Move | Space: Toggle | Enter: Delete Selected | Q: Back{RESET}")
+
+    def run(self):
+        if not self.items: return []
+        Navigator.hide_cursor()
+        try:
+            while True:
+                self.render()
+                key = Navigator.get_key()
+                if key == Navigator.UP: self.selected_index = (self.selected_index - 1) % len(self.items)
+                elif key == Navigator.DOWN: self.selected_index = (self.selected_index + 1) % len(self.items)
+                elif key == Navigator.SPACE:
+                    if self.selected_index in self.selected_items: self.selected_items.remove(self.selected_index)
+                    else: self.selected_items.add(self.selected_index)
+                elif key == Navigator.ENTER:
+                    if not self.selected_items: continue
+                    return list(self.selected_items)
                 elif key.lower() == 'q': return []
         finally: Navigator.show_cursor()
 
