@@ -4,6 +4,7 @@ import os
 import time
 import sqlite3
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
 from ..core.system import run_command, has_sudo
 from ..core.file_ops import get_size, bytes_to_human
 
@@ -24,54 +25,72 @@ def opt_log(message, success=True, skipped=False):
         msg = f"{message}"
     print(f"  {icon} {msg}")
 
+def vacuum_single_db(db_file):
+    """Worker function to vacuum a single database only if worth it."""
+    try:
+        conn = sqlite3.connect(db_file, timeout=1)
+        cursor = conn.cursor()
+        
+        # Get page count and free pages
+        cursor.execute("PRAGMA page_count")
+        page_count = cursor.fetchone()[0]
+        cursor.execute("PRAGMA freelist_count")
+        freelist_count = cursor.fetchone()[0]
+        cursor.execute("PRAGMA page_size")
+        page_size = cursor.fetchone()[0]
+        
+        if page_count == 0:
+            conn.close()
+            return 0
+            
+        free_ratio = freelist_count / page_count
+        free_bytes = freelist_count * page_size
+        
+        # Threshold: Only vacuum if > 10% is free OR > 5MB can be reclaimed
+        if free_ratio > 0.1 or free_bytes > 5 * 1024 * 1024:
+            old_size = get_size(db_file)
+            conn.execute("VACUUM")
+            conn.close()
+            return old_size - get_size(db_file)
+        
+        conn.close()
+        return 0
+    except:
+        return 0
+
 def vacuum_databases(dry_run=False):
-    """Ported from Mole: Optimizes SQLite databases for browsers to improve performance."""
+    """Optimizes SQLite databases in parallel."""
     targets = [
-        # Firefox
         "~/.mozilla/firefox/*/places.sqlite",
         "~/.mozilla/firefox/*/cookies.sqlite",
-        # Chrome/Brave/Edge
         "~/.config/google-chrome/Default/History",
         "~/.config/BraveSoftware/Brave-Browser/Default/History",
         "~/.config/microsoft-edge/Default/History",
     ]
     
-    count = 0
-    total_saved = 0
-    
+    db_files = []
     for pattern in targets:
         path_obj = Path(pattern).expanduser()
         parent = path_obj.parent
-        glob_pattern = path_obj.name
-        
         if not parent.exists(): continue
-        
-        for db_file in parent.glob(glob_pattern):
-            if db_file.is_file():
-                try:
-                    old_size = get_size(db_file)
-                    if dry_run:
-                        count += 1
-                        continue
-                    
-                    # Connect and run VACUUM
-                    conn = sqlite3.connect(db_file, timeout=2)
-                    conn.execute("VACUUM")
-                    conn.close()
-                    
-                    new_size = get_size(db_file)
-                    total_saved += (old_size - new_size)
-                    count += 1
-                except:
-                    # Database probably locked by running browser, skip safely
-                    continue
+        for f in parent.glob(path_obj.name):
+            if f.is_file(): db_files.append(f)
     
-    if count > 0:
-        saved_str = f" (compressed {bytes_to_human(total_saved)})" if total_saved > 0 else ""
-        opt_log(f"Optimized {count} browser database(s){saved_str}", skipped=dry_run)
+    if not db_files: return
+    if dry_run:
+        opt_log(f"Found {len(db_files)} browser database(s) to optimize", skipped=True)
+        return
+
+    total_saved = 0
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        results = list(executor.map(vacuum_single_db, db_files))
+        total_saved = sum(results)
+    
+    saved_str = f" (compressed {bytes_to_human(total_saved)})" if total_saved > 0 else ""
+    opt_log(f"Optimized {len(db_files)} browser database(s){saved_str}")
 
 def cleanup_zombie_autostart(dry_run=False):
-    """Ported from Mole: Removes autostart entries for uninstalled applications."""
+    """Removes autostart entries for uninstalled applications."""
     autostart_dir = Path.home() / ".config" / "autostart"
     if not autostart_dir.exists(): return
 
@@ -82,18 +101,16 @@ def cleanup_zombie_autostart(dry_run=False):
             with open(desktop_file, 'r') as f:
                 for line in f:
                     if line.startswith('Exec='):
-                        cmd = line.split('=', 1)[1].strip().split()[0]
-                        # If the command is an absolute path that doesn't exist
+                        exec_line = line.split('=', 1)[1].strip()
+                        if not exec_line: continue
+                        cmd = exec_line.split()[0]
                         if cmd.startswith('/') and not os.path.exists(cmd):
                             is_zombie = True
-                        # If it's a bare command that isn't in PATH
                         elif not cmd.startswith('/') and not shutil.which(cmd):
                             is_zombie = True
                         break
-            
             if is_zombie:
-                if not dry_run:
-                    desktop_file.unlink()
+                if not dry_run: desktop_file.unlink()
                 zombies += 1
         except: continue
     
@@ -101,68 +118,53 @@ def cleanup_zombie_autostart(dry_run=False):
         opt_log(f"Removed {zombies} zombie autostart entries", skipped=dry_run)
 
 def optimize_memory_advanced(dry_run=False):
-    """Advanced memory management: release PageCache and optimize Swap if needed."""
-    # 1. PageCache
-    if has_sudo():
-        if not dry_run:
-            subprocess.run(["sudo", "bash", "-c", "sync; echo 1 > /proc/sys/vm/drop_caches"], 
-                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        opt_log("PageCache released (Memory relief)", skipped=dry_run)
-
-    # 2. Swap Reset (Only if swap usage is high and RAM is plenty)
-    try:
-        with open("/proc/meminfo", "r") as f:
-            mem = {l.split(":")[0]: int(l.split(":")[1].split()[0]) for l in f.readlines()}
-        
-        swap_used = mem.get("SwapTotal", 0) - mem.get("SwapFree", 0)
-        ram_free = mem.get("MemAvailable", 0)
-        
-        # If we are using > 500MB of swap but have > 2GB RAM available
-        if swap_used > 512000 and ram_free > 2048000 and has_sudo():
-            if not dry_run:
-                # This can take a while, so we show a sub-status
-                print(f"    {GRAY}↳ Resetting Swap to improve latency...{RESET}")
-                subprocess.run(["sudo", "swapoff", "-a"], capture_output=True)
-                subprocess.run(["sudo", "swapon", "-a"], capture_output=True)
-                opt_log("Swap space reset (Latent memory reclaimed)")
-            else:
-                opt_log("Swap space could be optimized", skipped=True)
-    except: pass
+    """Quick memory optimizations."""
+    if has_sudo() and not dry_run:
+        # Fast non-blocking sync
+        subprocess.Popen(["sync"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # Drop caches is usually fast
+        subprocess.run(["sudo", "bash", "-c", "echo 1 > /proc/sys/vm/drop_caches"], 
+                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        opt_log("PageCache released (Memory relief)")
 
 def optimize_system(dry_run=False):
     os.system('clear')
     print(f"{BLUE}{BOLD}System Optimization{RESET}")
-    print(f"{GRAY}Running maintenance tasks...{RESET}\n")
+    print(f"{GRAY}Running maintenance tasks in parallel...{RESET}\n")
     
-    # 1. Essential Maintenance
-    if shutil.which("fstrim"):
-        if not dry_run:
-            run_command(["fstrim", "-av"], use_sudo=True, capture=True)
-        opt_log("SSD partitions trimmed (fstrim)", skipped=dry_run)
-    
-    dns_flushed = False
-    if shutil.which("resolvectl"):
-        if not dry_run: run_command(["resolvectl", "flush-caches"], use_sudo=True, capture=True)
-        dns_flushed = True
-    elif shutil.which("nscd"):
-        if not dry_run: run_command(["nscd", "-i", "hosts"], use_sudo=True, capture=True)
-        dns_flushed = True
-    if dns_flushed: opt_log("DNS resolver cache flushed", skipped=dry_run)
+    start_time = time.time()
 
-    if shutil.which("fc-cache"):
-        if not dry_run: run_command(["fc-cache", "-f"], capture=True)
-        opt_log("System font cache verified", skipped=dry_run)
+    # 1. Parallel Tasks
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        # SSD Trim (can be slow, but fstrim -a is generally efficient)
+        if shutil.which("fstrim") and not dry_run:
+            executor.submit(run_command, ["fstrim", "-av"], use_sudo=True, capture=True)
+            opt_log("SSD partitions trimmed (fstrim)")
 
-    # 2. Ported Advanced Tasks
+        # Verify font cache (Removed -f to make it much faster)
+        if shutil.which("fc-cache") and not dry_run:
+            executor.submit(run_command, ["fc-cache"], capture=True)
+            opt_log("System font cache refreshed")
+
+        # DNS Flush
+        dns_cmd = None
+        if shutil.which("resolvectl"): dns_cmd = ["resolvectl", "flush-caches"]
+        elif shutil.which("nscd"): dns_cmd = ["nscd", "-i", "hosts"]
+        
+        if dns_cmd and not dry_run:
+            executor.submit(run_command, dns_cmd, use_sudo=True, capture=True)
+            opt_log("DNS resolver cache flushed")
+
+    # 2. Sequence Tasks (but optimized)
     vacuum_databases(dry_run=dry_run)
     cleanup_zombie_autostart(dry_run=dry_run)
     
-    # 3. Memory & Storage Cleanup
     thumb_cache = os.path.expanduser("~/.cache/thumbnails")
-    if os.path.exists(thumb_cache):
-        if not dry_run: shutil.rmtree(thumb_cache, ignore_errors=True)
-        opt_log("Desktop thumbnail cache refreshed", skipped=dry_run)
+    if os.path.exists(thumb_cache) and not dry_run:
+        shutil.rmtree(thumb_cache, ignore_errors=True)
+        opt_log("Desktop thumbnail cache cleared")
 
     optimize_memory_advanced(dry_run=dry_run)
 
-    print(f"\n{GREEN}{BOLD}✨ All optimization tasks completed.{RESET}")
+    duration = time.time() - start_time
+    print(f"\n{GREEN}{BOLD}✨ All tasks completed in {duration:.1f}s.{RESET}")
