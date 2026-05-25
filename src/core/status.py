@@ -5,6 +5,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 from .file_ops import bytes_to_human
+from ..ui.navigator import draw_bar
 
 def get_mem_info():
     """Read RAM info from /proc/meminfo."""
@@ -19,9 +20,10 @@ def get_mem_info():
                 if 'MemAvailable' in line:
                     available = int(line.split()[1]) * 1024
             used = total - available
-            return bytes_to_human(used), bytes_to_human(total)
+            percent = (used / total) * 100 if total > 0 else 0
+            return bytes_to_human(used), bytes_to_human(total), percent
     except:
-        return "Unknown", "Unknown"
+        return "Unknown", "Unknown", 0
 
 def get_uptime():
     try:
@@ -210,29 +212,33 @@ def show_status():
     uptime = get_uptime()
     cpu_load = os.getloadavg()
     cpu_temp = get_cpu_temp()
-    used_mem, total_mem = get_mem_info()
+    used_mem_str, total_mem_str, mem_percent = get_mem_info()
     battery = get_battery_info()
     rx, tx = get_network_traffic()
     gpu = get_gpu_info()
     top_procs = get_top_processes()
     
     home_stats = shutil.disk_usage(os.path.expanduser("~"))
+    disk_percent = (home_stats.used / home_stats.total) * 100
     
     print(f"⏱️  Uptime:       {uptime}")
     print(f"📊 CPU Load:     {cpu_load[0]:.2f}, {cpu_load[1]:.2f}, {cpu_load[2]:.2f} (1m, 5m, 15m)")
     print(f"🌡️  CPU Temp:     {cpu_temp}")
-    print(f"🧠 Memory:       {used_mem} / {total_mem}")
+    
+    # Visual Progress Bars
+    mem_bar = draw_bar(mem_percent, width=20)
+    print(f"🧠 Memory:       {mem_bar}  {mem_percent:>5.1f}%  ({used_mem_str} / {total_mem_str})")
+    
+    disk_bar = draw_bar(disk_percent, width=20)
+    print(f"💾 Disk:         {disk_bar}  {disk_percent:>5.1f}%  ({bytes_to_human(home_stats.used)} / {bytes_to_human(home_stats.total)})")
     
     if gpu:
         print(f"🎮 GPU Status:   {gpu}")
     
-    disk_size_str = f"{bytes_to_human(home_stats.used)} / {bytes_to_human(home_stats.total)} used"
-    print(f"💾 Disk:         {disk_size_str}")
-    
     if battery:
         print(f"🔋 Battery:      {battery}")
     
-    print(f"🌐 Network:      ↓ {rx} / ↑ {tx} (Total)")
+    print(f"🌐 Network:      ↓ {rx} / ↑ {tx} (Total traffic)")
     
     if top_procs:
         print(f"🚀 Top Processes: {', '.join(top_procs)}")
