@@ -8,7 +8,7 @@ from pathlib import Path
 def test_env():
     """Create a temporary home directory for testing to prevent accidental deletion."""
     old_home = os.environ.get("HOME")
-    temp_home = tempfile.mkdtemp(prefix="lmole_test_home_")
+    temp_home = tempfile.mkdtemp(prefix="topo_test_home_")
     os.environ["HOME"] = temp_home
     
     # Pre-create some common structure

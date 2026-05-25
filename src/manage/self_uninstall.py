@@ -7,7 +7,7 @@ from ..core.system import get_invoking_user
 from ..core.file_ops import bytes_to_human, get_size
 
 def run_self_uninstall(dry_run=False):
-    """Removes lmole from the system."""
+    """Removes topo from the system."""
     # ANSI Colors
     MAGENTA = "\033[1;35m"
     GREEN = "\033[1;32m"
@@ -15,13 +15,13 @@ def run_self_uninstall(dry_run=False):
     RESET = "\033[0m"
     BOLD = "\033[1m"
 
-    print(f"\n {MAGENTA}☉ Removing lmole from your system...{RESET}\n")
+    print(f"\n {MAGENTA}☉ Removing topo from your system...{RESET}\n")
 
     # 1. Identify files to remove
     to_remove = []
     
     # The launcher link
-    launcher_path = Path.home() / ".local/bin/lmole"
+    launcher_path = Path.home() / ".local/bin/topo"
     if launcher_path.exists():
         to_remove.append({
             "path": launcher_path,
@@ -30,7 +30,7 @@ def run_self_uninstall(dry_run=False):
         })
 
     # Configuration directory
-    config_dir = Path.home() / ".config" / "lmole"
+    config_dir = Path.home() / ".config" / "topo"
     if config_dir.exists():
         to_remove.append({
             "path": config_dir,
@@ -39,7 +39,7 @@ def run_self_uninstall(dry_run=False):
         })
 
     # Cache directory (if any)
-    cache_dir = Path.home() / ".cache" / "lmole"
+    cache_dir = Path.home() / ".cache" / "topo"
     if cache_dir.exists():
         to_remove.append({
             "path": cache_dir,
@@ -65,7 +65,7 @@ def run_self_uninstall(dry_run=False):
         return
 
     # 3. Confirmation (Mole-style)
-    print(f"\n \033[1;35m→\033[0m Remove lmole, {bytes_to_human(total_size)}  \033[1;32mEnter\033[0m confirm, \033[1;90mESC\033[0m cancel: ", end="", flush=True)
+    print(f"\n \033[1;35m→\033[0m Remove topo, {bytes_to_human(total_size)}  \033[1;32mEnter\033[0m confirm, \033[1;90mESC\033[0m cancel: ", end="", flush=True)
 
     # Single-key capture
     import tty, termios
@@ -95,6 +95,6 @@ def run_self_uninstall(dry_run=False):
             print(f"  \033[1;31m✗\033[0m Failed to remove {p}: {e}")
 
     print("\n" + "=" * 70)
-    print(f" \033[1;34mlmole has been removed from your system paths.{RESET}")
+    print(f" \033[1;34mtopo has been removed from your system paths.{RESET}")
     print(f" {GRAY}Note: The source code in {os.path.dirname(os.path.dirname(os.path.dirname(__file__)))} was not deleted.{RESET}")
     print("=" * 70 + "\n")

@@ -1,6 +1,6 @@
 # Daily Modification Report - 2026-05-25
 
-## Project: lmole (Linux Mole) - Extreme UX & Interaction Refinement
+## Project: topo (Topo) - Extreme UX & Interaction Refinement
 
 Today's session focused on advanced TUI interaction, responsive design, and perfecting the navigation flow for heavy users.
 
@@ -11,10 +11,12 @@ Today's session focused on advanced TUI interaction, responsive design, and perf
 *   **Selection Summary**: Added a persistent **"☉ Selected Items to Remove"** summary at the bottom of the analysis views (Main and Top Files), providing clear visibility of the removal queue in the signature Mole purple style.
 *   **Auto-Back Logic**: Enhanced the cleaning workflow to automatically return to the parent directory when the current folder becomes empty after deletion, reducing manual keypresses.
 
-### 2. Layout & Accessibility
-*   **CLI Interface Modernization**: Re-engineered the `lmole --help` output with a professional, categorized sub-command structure. Added descriptive help strings and clear usage examples for all core modules.
-*   **Direct Command Execution**: Fixed a critical logic gap in CLI mode. Sub-commands like `lmole analyze`, `lmole status`, and `lmole uninstall` are now fully operational, allowing users to jump directly into specific interactive modules from their terminal.
-*   **Responsive TUI Design**: Implemented a fully adaptive layout for the "Analyze Disk" module.
+### 3. Layout & Accessibility
+*   **Official Rebranding**: Successfully transitioned the project name from `lmole` to **Topo** (derived from the Spanish word for Mole). This move defines Topo as a high-performance, independent Linux system optimizer.
+*   **New Visual Identity**: Implemented a minimalist 'Console Ninja' ASCII banner with a non-slanted font, following the user's preference for a clean, professional terminal aesthetic.
+*   **Global Code Refresh**: Performed a project-wide refactoring to update all module names, binary targets (`topo-core`), and documentation to reflect the new brand.
+*   **CLI Interface Modernization**: Re-engineered the `topo --help` output with a professional, categorized sub-command structure.
+
  The UI dynamically detects terminal width, automatically shrinking or hiding progress bars and truncating filenames to prevent line wrapping on small screens.
 *   **Navigation Stability**: Performed a deep-level stabilization of the arrow key capture logic. Refined the raw-mode input buffer to ensure 100% reliable 3-byte escape sequence capture across GNOME Terminal, xterm, and SSH sessions.
 *   **Back Navigation Overhaul**: Added support for **B** and **H** (Vim-style) keys for returning to previous folders, alongside a clearer `← Back` UI hint.
@@ -24,17 +26,17 @@ Today's session focused on advanced TUI interaction, responsive design, and perf
 
 # Daily Modification Report - 2026-05-24
 
-## Project: lmole (Linux Mole) & Mole - Visual Identity & Smart Insights
+## Project: topo (Topo) & Mole - Visual Identity & Smart Insights
 
 This session established the modern visual identity and ported key intelligence features from macOS to the Linux ecosystem.
 
 ### 1. Visual Modernization
-*   **Gemini-Style Progress Bars**: Replaced traditional block characters with the sleek `▬` character across both `lmole` and `Mole`. Implemented a continuous, dual-tone style (Colored for usage, Gray for empty) for a premium dashboard look.
+*   **Gemini-Style Progress Bars**: Replaced traditional block characters with the sleek `▬` character across both `topo` and `Mole`. Implemented a continuous, dual-tone style (Colored for usage, Gray for empty) for a premium dashboard look.
 *   **CJK Character Alignment**: Solved the long-standing "jagged list" problem in terminals. Developed visual width detection (2 units for CJK, 1 for Latin) to ensure perfect vertical alignment of size columns regardless of filename language.
 *   **Precise Formatting**: Optimized column spacing (5 spaces) and introduced human-centric units with proper spacing (e.g., `1.2 GB`) for maximum readability.
 
 ### 2. Intelligence & Insights
-*   **Linux Hidden Space Insights**: Developed an automatic detection engine for Linux "disk killers." `lmole` now elevates Docker data, package manager caches (Apt/Pacman/Dnf), and system logs to the root view with an `👀` icon.
+*   **Linux Hidden Space Insights**: Developed an automatic detection engine for Linux "disk killers." `topo` now elevates Docker data, package manager caches (Apt/Pacman/Dnf), and system logs to the root view with an `👀` icon.
 *   **Smart Downloads Analysis**: Added an "Old Downloads (90d+)" smart view that isolates forgotten files in `~/Downloads` for targeted cleanup.
 *   **Age Hints**: Integrated modification-time analysis (e.g., `>90d`, `>6mo`, `>1y`) next to items to help users identify dormant data.
 *   **Smart SQLite Vacuuming**: Implemented fragmentation checks for browser databases, only triggering the heavy `VACUUM` operation when reclaimable space exceeds 10%, drastically reducing maintenance time.
@@ -48,7 +50,7 @@ This session established the modern visual identity and ported key intelligence 
 
 # Daily Modification Report - 2026-05-23
 
-## Project: lmole (Linux Mole) - Professional Polish Phase
+## Project: topo (Topo) - Professional Polish Phase
 
 Today's session focused on visual refinement, interactive fluidity, and deep system integration, reaching 100% parity with the macOS Mole experience while maintaining Linux-specific performance advantages.
 
@@ -82,9 +84,9 @@ Today's session focused on visual refinement, interactive fluidity, and deep sys
 
 # Daily Modification Report - 2026-05-22
 
-## Project: lmole (Linux Mole)
+## Project: topo (Topo)
 
-Today's session focused on transforming `lmole` from a basic script collection into a professional-grade, high-performance system optimization tool for Linux.
+Today's session focused on transforming `topo` from a basic script collection into a professional-grade, high-performance system optimization tool for Linux.
 
 ### 1. Cleanup Engine (Clean)
 *   **One-Key Execution**: Simplified the workflow to a single-action cleanup with real-time progress feedback.
@@ -103,7 +105,7 @@ Today's session focused on transforming `lmole` from a basic script collection i
     *   Implemented **Numeric Hotkeys** (1-0) for instant multi-selection.
     *   Added **Selection Highlighting** (Bold Magenta) and a **Vertical Selection Summary**.
     *   Created a detailed **Pre-removal Plan Preview** to show exactly which files will be deleted.
-*   **Safety**: Enforced strict **Home Directory Isolation**, ensuring `lmole` never touches system-level files outside the user's scope.
+*   **Safety**: Enforced strict **Home Directory Isolation**, ensuring `topo` never touches system-level files outside the user's scope.
 
 ### 3. System Maintenance & Monitoring (Status & Optimize)
 *   **Metric Expansion**: Added **CPU Temperature** sensing and **Battery Cycle Count** tracking.

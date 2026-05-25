@@ -100,7 +100,7 @@ def run_purge(dry_run=False):
             from .core.config import add_purge_path, remove_purge_path, get_purge_paths
             while True:
                 os.system('clear')
-                print("\n\033[1;36m⚙️  lmole Purge Settings\033[0m")
+                print("\n\033[1;36m⚙️  topo Purge Settings\033[0m")
                 print("-" * 50)
                 paths = get_purge_paths()
                 print(f"Current Purge Search Paths:")
@@ -264,16 +264,16 @@ from .core.whitelist import add_to_whitelist, remove_from_whitelist
 
 def main():
     parser = argparse.ArgumentParser(
-        description="lmole - High-performance Linux System Optimizer (Inspired by Mole)",
+        description="topo - High-performance Linux System Optimizer (Inspired by Mole)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  lmole                 Start interactive TUI (Recommended)
-  lmole clean           Run one-key safe cleanup
-  lmole analyze         Start interactive disk usage explorer
-  lmole status          Check system health and metrics
-  lmole whitelist list  View currently protected paths
-  lmole --dry-run clean Preview files to be cleaned without deleting
+  topo                 Start interactive TUI (Recommended)
+  topo clean           Run one-key safe cleanup
+  topo analyze         Start interactive disk usage explorer
+  topo status          Check system health and metrics
+  topo whitelist list  View currently protected paths
+  topo --dry-run clean Preview files to be cleaned without deleting
 """
     )
     
@@ -294,12 +294,12 @@ Examples:
     wl_parser.add_argument("path", nargs="?", help="Target path for add/remove")
     
     subparsers.add_parser("authorize", help="Setup passwordless sudo for faster cleanup")
-    subparsers.add_parser("remove", help="Uninstall lmole from the system")
+    subparsers.add_parser("remove", help="Uninstall topo from the system")
     subparsers.add_parser("all", help="Run all cleanup and purge tasks sequentially")
 
     # --- Global Options ---
     parser.add_argument("--dry-run", action="store_true", help="Preview changes without deleting")
-    parser.add_argument("--version", action="version", version="lmole 0.5.0")
+    parser.add_argument("--version", action="version", version="topo 0.5.0")
     
     args = parser.parse_args()
 
@@ -329,7 +329,7 @@ Examples:
             for p in w:
                 print(f"   - {p}")
         else:
-            print("Usage: lmole whitelist <add|remove|list> [path]")
+            print("Usage: topo whitelist <add|remove|list> [path]")
         return
 
     # If no command is provided, enter TUI
@@ -357,7 +357,7 @@ Examples:
         return
 
     # CLI Mode Execution
-    print(f"\033[1;34mlmole 0.5.0 (Python Edition)\033[0m")
+    print(f"\033[1;34mtopo 0.5.0 (Python Edition)\033[0m")
     os_id = get_os_id()
     print(f"System: {os_id}\n")
 

@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 def get_config_dir() -> Path:
-    return Path.home() / ".config" / "lmole"
+    return Path.home() / ".config" / "topo"
 
 def get_whitelist_file() -> Path:
     return get_config_dir() / "whitelist.json"

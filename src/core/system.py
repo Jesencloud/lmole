@@ -60,6 +60,6 @@ def setup_passwordless_sudo():
     rule = f"{user} ALL=(ALL) NOPASSWD: {script_path}"
     
     print(f"\n{BOLD}🛡️  Setup Passwordless Mode{RESET}")
-    print(f"To allow lmole to run without ever asking for a password, run this command once:")
-    print(f"\n\033[1;33mecho '{rule}' | sudo tee /etc/sudoers.d/lmole\033[0m\n")
-    print(f"This will create a safe rule specifically for the lmole script.")
+    print(f"To allow topo to run without ever asking for a password, run this command once:")
+    print(f"\n\033[1;33mecho '{rule}' | sudo tee /etc/sudoers.d/topo\033[0m\n")
+    print(f"This will create a safe rule specifically for the topo script.")

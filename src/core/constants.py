@@ -75,7 +75,7 @@ DEFAULT_PURGE_SEARCH_PATHS = [
 ]
 
 # Config file for custom purge paths
-PURGE_CONFIG_FILE = Path.home() / ".config" / "lmole" / "purge_paths"
+PURGE_CONFIG_FILE = Path.home() / ".config" / "topo" / "purge_paths"
 
 # Minimum age in days before considering for cleanup
 MIN_AGE_DAYS = 7

@@ -67,7 +67,7 @@ def get_old_items_info(dir_path: Path, days_threshold: int = 90) -> List[Dict[st
 def get_rust_scan_data(path: Path) -> Dict[str, Any]:
     cached = ScanCache.get(path)
     if cached: return cached
-    bin_path = Path(__file__).parent / "bin" / "lmo-core"
+    bin_path = Path(__file__).parent / "bin" / "topo-core"
     if not bin_path.exists(): return None
     try:
         res = subprocess.run([str(bin_path), str(path)], capture_output=True, text=True, timeout=30)

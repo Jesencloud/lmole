@@ -1,8 +1,8 @@
-# 🦔 lmole
+# 🦔 topo
 
-**lmole** (Linux Mole) is a high-performance system optimization and cleanup tool designed specifically for the Linux platform. Inspired by the minimalist philosophy of the famous `Mole` tool on macOS, `lmole` provides a fast, safe, and intuitive experience for maintaining system health and reclaiming disk space.
+**topo** (Topo) is a high-performance system optimization and cleanup tool designed specifically for the Linux platform. Inspired by the minimalist philosophy of the famous `Mole` tool on macOS, `topo` provides a fast, safe, and intuitive experience for maintaining system health and reclaiming disk space.
 
-Built with a hybrid architecture of **Python logic** and a custom **Rust scanning engine**, `lmole` is up to 10x faster than traditional shell-based tools for large-scale filesystem analysis.
+Built with a hybrid architecture of **Python logic** and a custom **Rust scanning engine**, `topo` is up to 10x faster than traditional shell-based tools for large-scale filesystem analysis.
 
 ---
 
@@ -27,7 +27,7 @@ Built with a hybrid architecture of **Python logic** and a custom **Rust scannin
 
 ## 🚀 Technical Advantages
 
-*   **Rust Engine**: Core scanning logic implemented in `lmo-core` (Rust), utilizing parallel I/O to analyze tens of thousands of files in milliseconds.
+*   **Rust Engine**: Core scanning logic implemented in `topo-core` (Rust), utilizing parallel I/O to analyze tens of thousands of files in milliseconds.
 *   **Modern TUI**: A clean terminal user interface with full keyboard navigation and numeric hotkeys for rapid selection.
 *   **Safe by Design**: Built-in global whitelist protection ensures critical system paths are never touched. Enforces strict **Home Directory Isolation** for manual cleanup tasks.
 *   **Cloud & AI Ready**: Native support for cleaning Docker resources and massive AI model repositories (Ollama, Hugging Face).
@@ -41,42 +41,42 @@ Built with a hybrid architecture of **Python logic** and a custom **Rust scannin
 *   Linux OS (Fedora, Ubuntu, Debian, Arch, etc.)
 
 ### Quick Installation (Recommended)
-`lmole` is designed as a standalone tool. Simply link the launcher to your local bin path:
+`topo` is designed as a standalone tool. Simply link the launcher to your local bin path:
 
 ```bash
 # Clone the repository
-git clone https://github.com/Jesencloud/lmole.git
-cd lmole
+git clone https://github.com/Jesencloud/topo.git
+cd topo
 
 # Create a symbolic link to your local bin directory
 # (Ensure ~/.local/bin is in your PATH)
-ln -s $(pwd)/lmole ~/.local/bin/lmole
+ln -s $(pwd)/topo ~/.local/bin/topo
 ```
 
 ### Build Rust Engine (Optional)
 The project includes pre-compiled binaries. To build the engine manually:
 ```bash
-cd lmo-core && cargo build --release
-cp target/release/lmo-core ../src/core/bin/lmo-core
+cd topo-core && cargo build --release
+cp target/release/topo-core ../src/core/bin/topo-core
 ```
 
 ---
 
 ## 📖 Usage Guide
 
-Type `lmole` to enter the interactive TUI:
+Type `topo` to enter the interactive TUI:
 ```bash
-lmole
+topo
 ```
 
 Alternatively, use CLI commands:
-*   `lmole clean` - Execute one-key cleanup
-*   `lmole uninstall` - Enter application uninstallation mode
-*   `lmole optimize` - Run system maintenance tasks
-*   `lmole analyze` - Enter deep disk analysis mode
-*   `lmole status` - View real-time system health
-*   `lmole remove` - Safely remove lmole system integration
-*   `lmole authorize` - Setup passwordless sudo for lmole (optional)
+*   `topo clean` - Execute one-key cleanup
+*   `topo uninstall` - Enter application uninstallation mode
+*   `topo optimize` - Run system maintenance tasks
+*   `topo analyze` - Enter deep disk analysis mode
+*   `topo status` - View real-time system health
+*   `topo remove` - Safely remove topo system integration
+*   `topo authorize` - Setup passwordless sudo for topo (optional)
 
 ---
 
@@ -84,6 +84,6 @@ Alternatively, use CLI commands:
 
 *   **Inspired by**: [Mole](https://github.com/tw93/mole) (macOS)
 *   **Core Logic**: Python 3
-*   **Scanning Engine**: Rust (lmo-core)
+*   **Scanning Engine**: Rust (topo-core)
 
-`lmole` strives to be the most elegant and powerful optimization tool for the Linux community. Issues and Pull Requests are always welcome!
+`topo` strives to be the most elegant and powerful optimization tool for the Linux community. Issues and Pull Requests are always welcome!

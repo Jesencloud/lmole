@@ -14,14 +14,15 @@ BOLD = "\033[1m"
 def show_banner():
     # Detect the calling command name
     cmd_name = os.path.basename(sys.argv[0])
-    if cmd_name in ("lmo.py", "python3", "main.py"): cmd_name = "lmole"
+    if cmd_name in ("lmo.py", "python3", "main.py"): cmd_name = "topo"
     
-    banner = f"""{BLUE} _                     _      
-| |                   | |     
-| |    _ __ ___    ___| |  ___      
-| |   | '_ ` _ \\  / _ \\ | / _ \\     
-| |___| | | | | || (_) || |  __/
-|_____|_| |_| |_|  \\___/|_|  \\___|{RESET}"""
+    banner = f"""{BLUE}  _____ ___  ___ ___ 
+ |_   _/ _ \| _ \ _ \\
+   | || (_) |  _/(_) |
+   |_| \___/|_| \___/
+             v0.5.0
+
+      ( θ _ θ )  ~ topo is digging deeper...{RESET}"""
 
     print(banner)
     

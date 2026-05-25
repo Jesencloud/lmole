@@ -264,7 +264,7 @@ def perform_purge():
 # ============================================================================
 
 def main():
-    parser = argparse.ArgumentParser(description="lmole - Linux System Cleaner (Python Version)")
+    parser = argparse.ArgumentParser(description="topo - Linux System Cleaner (Python Version)")
     parser.add_argument("command", choices=["clean", "purge", "all"], nargs="?", default="all",
                         help="Command to run: clean (system), purge (projects), or all")
     parser.add_argument("-n", "--dry-run", action="store_true", help="Preview only, no deletions")
@@ -275,7 +275,7 @@ def main():
     if args.dry_run:
         print(f"{C_YELLOW_BOLD}!!! DRY RUN MODE - No files will be deleted !!!{C_NC}")
 
-    print(f"{C_BLUE_BOLD}lmole 0.2.0 (Python Refactor){C_NC}")
+    print(f"{C_BLUE_BOLD}topo 0.2.0 (Python Refactor){C_NC}")
     os_info = get_os_info()
     print(f"{C_GRAY}System: {os_info['ID']} {os_info['VERSION']}{C_NC}")
 
@@ -287,7 +287,7 @@ def main():
     if args.command in ("purge", "all"):
         perform_purge()
 
-    print(f"\n{C_BLUE_BOLD}=== lmole execution finished ==={C_NC}")
+    print(f"\n{C_BLUE_BOLD}=== topo execution finished ==={C_NC}")
 
 C_BLUE_BOLD = "\033[1;94m"
 C_PURPLE_BOLD = "\033[1;95m"
