@@ -208,6 +208,9 @@ def run_deep_analysis():
             if state_stack:
                 prev = state_stack.pop()
                 current_target, results, data, total_scan_size = prev['target'], prev['results'], prev['data'], prev['total_size']
+                # Recalculate parent percentages to reflect any deletions done in child
+                if total_scan_size > 0:
+                    for r in results: r['percent'] = (r['size'] / total_scan_size) * 100
                 needs_scan = False
             else: break
         elif action == "REFRESH":
@@ -241,11 +244,11 @@ def run_deep_analysis():
                 
                 # SYNC PARENT SIZE: Update the folder entry in the parent state
                 if state_stack:
+                    state_stack[-1]['total_size'] = max(1, state_stack[-1]['total_size'] - freed_size)
                     parent_results = state_stack[-1]['results']
                     for p_item in parent_results:
                         if p_item['path'] == target_to_scan:
                             p_item['size'] = max(0, p_item['size'] - freed_size)
-                            # Parent percent will be recalculated when we pop back to it
                             break
                     ScanCache._data.pop(str(state_stack[-1]['target']), None)
 
