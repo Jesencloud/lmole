@@ -263,14 +263,43 @@ def run_uninstall():
 from .core.whitelist import add_to_whitelist, remove_from_whitelist
 
 def main():
-    parser = argparse.ArgumentParser(description="lmole - Linux System Optimizer (Inspired by Mole)")
-    parser.add_argument("command", choices=["clean", "purge", "uninstall", "optimize", "analyze", "status", "whitelist", "authorize", "remove", "all"], nargs="?", default=None)
+    parser = argparse.ArgumentParser(
+        description="lmole - High-performance Linux System Optimizer (Inspired by Mole)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  lmole                 Start interactive TUI (Recommended)
+  lmole clean           Run one-key safe cleanup
+  lmole analyze         Start interactive disk usage explorer
+  lmole status          Check system health and metrics
+  lmole whitelist list  View currently protected paths
+  lmole --dry-run clean Preview files to be cleaned without deleting
+"""
+    )
+    
+    # Use a subparser for better help organization
+    subparsers = parser.add_subparsers(dest="command", metavar="COMMAND")
+
+    # --- Core Actions ---
+    subparsers.add_parser("clean", help="One-key safe disk cleanup")
+    subparsers.add_parser("purge", help="Interactive project artifact purging")
+    subparsers.add_parser("uninstall", help="Completely remove applications and residues")
+    subparsers.add_parser("optimize", help="Run system maintenance (fstrim, databases, etc.)")
+    subparsers.add_parser("analyze", help="Interactive disk usage explorer")
+    subparsers.add_parser("status", help="Monitor system health and resource usage")
+    
+    # --- Management ---
+    wl_parser = subparsers.add_parser("whitelist", help="Manage path protection whitelist")
+    wl_parser.add_argument("action", choices=["add", "remove", "list"], nargs="?", default="list", help="Whitelist action")
+    wl_parser.add_argument("path", nargs="?", help="Target path for add/remove")
+    
+    subparsers.add_parser("authorize", help="Setup passwordless sudo for faster cleanup")
+    subparsers.add_parser("remove", help="Uninstall lmole from the system")
+    subparsers.add_parser("all", help="Run all cleanup and purge tasks sequentially")
+
+    # --- Global Options ---
     parser.add_argument("--dry-run", action="store_true", help="Preview changes without deleting")
     parser.add_argument("--version", action="version", version="lmole 0.5.0")
-    
-    # Whitelist sub-arguments
-    parser.add_argument("action", nargs="?", help="Whitelist action: add, remove, list")
-    parser.add_argument("path", nargs="?", help="Path for whitelist action")
     
     args = parser.parse_args()
 
@@ -327,7 +356,7 @@ def main():
                 break
         return
 
-    # CLI Mode
+    # CLI Mode Execution
     print(f"\033[1;34mlmole 0.5.0 (Python Edition)\033[0m")
     os_id = get_os_id()
     print(f"System: {os_id}\n")
@@ -337,6 +366,20 @@ def main():
 
     if args.command in ("purge", "all"):
         run_purge(args.dry_run)
+
+    if args.command == "uninstall":
+        run_uninstall()
+
+    if args.command == "analyze":
+        run_deep_analysis()
+
+    if args.command == "status":
+        show_status()
+
+    if args.command == "optimize":
+        print("🔒 Authorizing optimization tasks...")
+        ensure_sudo_session()
+        optimize_system(args.dry_run)
 
     if args.command == "remove":
         run_self_uninstall(args.dry_run)
