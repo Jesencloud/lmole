@@ -22,8 +22,14 @@ echo -e " ${CYAN}●${NC} ${BOLD}Topo${NC} ${GRAY}is digging deeper 🦡 🦡 �
 
 # 1. Check prerequisites
 echo -e "${CYAN}☉ Checking prerequisites...${NC}"
-command -v git >/dev/null 2>&1 || { echo -e "  ${RED}✗ Error: git is required but not installed.${NC}"; exit 1; }
-echo -e "  ${GREEN}✓ git installed${NC}"
+
+HAS_GIT=false
+if command -v git >/dev/null 2>&1; then
+    echo -e "  ${GREEN}✓ git installed${NC}"
+    HAS_GIT=true
+else
+    echo -e "  ${YELLOW}ℹ git not found, will use direct download fallback${NC}"
+fi
 
 command -v python3 >/dev/null 2>&1 || { echo -e "  ${RED}✗ Error: python3 is required but not installed.${NC}"; exit 1; }
 echo -e "  ${GREEN}✓ python3 installed${NC}"
@@ -31,18 +37,27 @@ echo -e "  ${GREEN}✓ python3 installed${NC}"
 # 2. Define paths
 INSTALL_DIR="$HOME/.topo"
 REPO_URL="https://github.com/Jesencloud/Topo.git"
+TARBALL_URL="https://github.com/Jesencloud/Topo/archive/refs/heads/main.tar.gz"
 
-# 3. Clone or update repository
+# 3. Clone or download source
 echo -e "\n${CYAN}☉ Fetching Topo...${NC}"
-if [ -d "$INSTALL_DIR" ]; then
-    echo -e "  ${GRAY}↺ Updating Topo in ${INSTALL_DIR}...${NC}"
-    cd "$INSTALL_DIR"
-    # To keep things clean, we reset and pull
-    git fetch --quiet --depth 1 origin main
-    git reset --hard origin/main --quiet
+if [ "$HAS_GIT" = true ]; then
+    if [ -d "$INSTALL_DIR" ]; then
+        echo -e "  ${GRAY}↺ Updating Topo in ${INSTALL_DIR}...${NC}"
+        cd "$INSTALL_DIR"
+        git fetch --quiet --depth 1 origin main
+        git reset --hard origin/main --quiet
+    else
+        echo -e "  ${GRAY}↓ Downloading Topo via Git...${NC}"
+        git clone --quiet --depth 1 "$REPO_URL" "$INSTALL_DIR"
+    fi
 else
-    echo -e "  ${GRAY}↓ Downloading Topo (Production Build)...${NC}"
-    git clone --quiet --depth 1 "$REPO_URL" "$INSTALL_DIR"
+    echo -e "  ${GRAY}↓ Downloading Topo archive...${NC}"
+    mkdir -p "$INSTALL_DIR"
+    # Download and extract, stripping the top-level directory (Topo-main)
+    curl -fsSL "$TARBALL_URL" | tar -xzC "$INSTALL_DIR" --strip-components=1
+    # Mark as non-git install for update logic
+    touch "$INSTALL_DIR/.non_git_install"
 fi
 
 # 4. Clean up and provision binaries
