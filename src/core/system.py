@@ -4,6 +4,9 @@ import shutil
 import sys
 from pathlib import Path
 
+# Global flag to track if user explicitly cancelled sudo auth
+SUDO_CANCELLED = False
+
 def get_os_id():
     try:
         if os.path.exists("/etc/os-release"):
@@ -19,7 +22,14 @@ def get_invoking_user():
     return os.environ.get("SUDO_USER") or os.environ.get("USER") or "unknown"
 
 def run_command(args, use_sudo=False, capture=True):
-    cmd = ["sudo"] + args if use_sudo else args
+    if use_sudo:
+        if SUDO_CANCELLED:
+            cmd = ["sudo", "-n"] + args
+        else:
+            cmd = ["sudo"] + args
+    else:
+        cmd = args
+        
     try:
         result = subprocess.run(
             cmd, 
@@ -45,15 +55,20 @@ def has_sudo():
 
 def ensure_sudo_session():
     """Ask for sudo password once to refresh the system-level sudo timestamp."""
+    global SUDO_CANCELLED
     try:
         # sudo -v (validate) updates the user's cached credentials.
         # It doesn't run a command, just refreshes the timer.
         res = subprocess.run(["sudo", "-v"], capture_output=False)
+        if res.returncode != 0:
+            SUDO_CANCELLED = True
         return res.returncode == 0
     except KeyboardInterrupt:
         print() # Add a newline after ^C
+        SUDO_CANCELLED = True
         return False
     except:
+        SUDO_CANCELLED = True
         return False
 
 def setup_passwordless_sudo():
