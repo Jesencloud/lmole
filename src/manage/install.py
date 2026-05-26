@@ -45,9 +45,31 @@ def run_install_link():
     
     path_env = os.environ.get("PATH", "")
     if str(target_dir) not in path_env:
-        print(f"\n {YELLOW}⚠️  Warning:{RESET} {BOLD}~/.local/bin{RESET} is not in your PATH.")
-        print(f" Please add it to your shell config (e.g., .bashrc or .zshrc):")
-        print(f" {GRAY}export PATH=\"$HOME/.local/bin:$PATH\"{RESET}")
+        print(f"\n {YELLOW}ℹ  ~/.local/bin is not in your PATH. Attempting auto-fix...{RESET}")
+        
+        added = False
+        # Potential shell config files
+        shell_configs = [Path.home() / ".bashrc", Path.home() / ".zshrc"]
+        export_line = 'export PATH="$HOME/.local/bin:$PATH"'
+        
+        for config in shell_configs:
+            if config.exists():
+                try:
+                    content = config.read_text()
+                    if export_line not in content:
+                        with open(config, "a") as f:
+                            f.write(f"\n# Added by topo\n{export_line}\n")
+                        print(f"  {GREEN}✓{RESET} Added to {GRAY}{config.name}{RESET}")
+                        added = True
+                except: pass
+        
+        if added:
+            print(f"\n {BOLD}Please restart your terminal or run:{RESET}")
+            print(f" {GRAY}source ~/.bashrc{RESET} (or your shell config)")
+        else:
+            print(f"\n {YELLOW}⚠️  Manual action required:{RESET}")
+            print(f" Add this line to your .bashrc or .zshrc:")
+            print(f" {GRAY}{export_line}{RESET}")
     else:
         print(f" You can now run {BOLD}topo{RESET} from any directory.")
     print("=" * 70 + "\n")
