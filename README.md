@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>🦡 topo</h1>
+  <h1>🦡 Topo</h1>
   <p><em>High-performance system optimization and cleanup for Linux.</em></p>
 </div>
 
@@ -8,79 +8,116 @@
   <a href="https://github.com/Jesencloud/Topo/releases"><img src="https://img.shields.io/github/v/tag/Jesencloud/Topo?label=version&style=flat-square" alt="Version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" alt="License"></a>
   <a href="https://github.com/Jesencloud/Topo/commits"><img src="https://img.shields.io/github/commit-activity/m/Jesencloud/Topo?style=flat-square" alt="Commits"></a>
+  <a href="https://github.com/Jesencloud/Topo"><img src="https://img.shields.io/badge/platform-linux-lightgrey?style=flat-square&logo=linux" alt="Linux"></a>
 </p>
 
-**topo** (Topo) is inspired by the minimalist philosophy of the famous `Mole` tool on macOS, providing a fast, safe, and intuitive experience for maintaining system health and reclaiming disk space.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Jesencloud/Topo/main/daily_report.md" alt="Topo - Professional Linux Optimizer" width="1000" style="display:none" />
+</p>
 
-Built with a hybrid architecture of **Python logic** and a custom **Rust scanning engine**, `topo` is up to 10x faster than traditional shell-based tools for large-scale filesystem analysis.
+> The most elegant way to keep your Linux system lean and mean. Inspired by the minimalist philosophy of [Mole](https://github.com/tw93/mole) on macOS.
 
----
+## Features
 
-## ✨ Key Features
+- **All-in-one toolkit**: Combines DNF/APT cleaner, App Uninstaller, Disk Analyzer, and iStat-style Monitor in a **single tool**.
+- **Deep cleaning**: Reclaims gigabytes by purging caches, journal logs, browser leftovers, and massive **AI/LLM models**.
+- **Smart uninstaller**: Removes applications plus their hidden config remnants in `~/.config` and `~/.local`.
+- **Disk insights**: Ultra-fast disk explorer powered by a **Rust scanning engine** with parallel I/O.
+- **Live monitoring**: Real-time dashboard showing CPU, GPU, memory, and top resource-consuming processes.
 
-1.  **🧽 One-Key Clean**  
-    A streamlined, one-action cleanup process. Covers package manager caches (DNF/APT/Pacman), system journal logs, user trash, and developer caches (NPM, Pip, Go). Now features **AI/LLM Model Cleanup** (Ollama, Hugging Face) and Docker system pruning.
+## Quick Start
 
-2.  **📦 Deep Uninstall**  
-    Completely remove applications including their hidden residues. Uses **intelligent keyword extraction** from `.desktop` files and fuzzy matching to locate configurations in `~/.config`, `~/.cache`, and `~/.local`. Automatically **terminates running processes** before removal to prevent "ghost" apps.
-
-3.  **⚡ System Optimize**  
-    Advanced maintenance beyond simple cleaning. Includes **SQLite Database Vacuuming** for browsers (Firefox, Chrome, Brave) to improve startup speed, **Zombie Autostart Cleanup**, SSD Trim, and **Intelligent Memory/Swap Management**.
-
-4.  **📊 Intelligence Analyze**  
-    An ultra-fast disk usage analyzer powered by a dedicated Rust engine. Features multi-threaded scanning and a built-in **ScanCache** for instant directory navigation without rescanning.
-
-5.  **🛡️ Health Status**  
-    Comprehensive system monitoring dashboard. Displays CPU load, core temperature, memory pressure, disk utilization, network traffic, **GPU Status (NVIDIA/AMD)**, and a list of **Top Resource-Consuming Processes**.
-
----
-
-## 🚀 Technical Advantages
-
-*   **Multi-Arch Rust Engine**: Core scanning logic implemented in Rust, utilizing parallel I/O for extreme performance. Supports both **x86_64** and **ARM64** (Apple Silicon, Raspberry Pi, Cloud ARM) with automatic binary provisioning.
-*   **Zero-Interruption Experience**: Smart `sudo` pre-authorization allows the cleaning process to run completely unattended once started—no more mid-task password prompts.
-*   **Intelligent Silence**: Topo follows a "silent on zero-gain" philosophy. If a task reclaims 0 B, it stays hidden, keeping your terminal output clean and high-signal.
-*   **Production-Ready Installer**: The `install.sh` script handles everything: architecture detection, dependency checks, and a "lean" installation that excludes development artifacts.
-*   **Safe by Design**: Features global whitelist protection and strict **Home Directory Isolation** to prevent accidental deletion of critical system files.
-
----
-
-## 🛠️ Installation & Usage
-
-### Quick Installation
-Deploy the latest stable version of `topo` with a single command:
+**Automated Installation (Recommended)**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Jesencloud/Topo/main/install.sh | bash
 ```
 
-This script will automatically detect your hardware, provision the correct optimized engine to `~/.topo`, and set up the `topo` command in your terminal.
+> Note: The script automatically detects your architecture (**x86_64** or **ARM64**) and provisions the optimized engine.
 
----
+**Run**
 
-## 📖 Usage Guide
-
-Type `topo` to enter the interactive TUI:
 ```bash
-topo
+topo                           # Start interactive TUI (Recommended)
+topo clean                     # One-key safe cleanup
+topo uninstall                 # Deep application uninstaller
+topo optimize                  # Refresh system services & maintenance
+topo analyze                   # Ultra-fast disk usage explorer
+topo status                    # Live system health dashboard
+
+topo update                    # Upgrade Topo to the latest version
+topo link                      # Re-configure system-wide command
+topo remove                    # Safely remove Topo from system
+topo --help                    # Show help
 ```
 
-Alternatively, use CLI commands:
-*   `topo clean` - Execute one-key cleanup
-*   `topo uninstall` - Enter application uninstallation mode
-*   `topo optimize` - Run system maintenance tasks
-*   `topo analyze` - Enter deep disk analysis mode
-*   `topo status` - View real-time system health
-*   `topo update` - Update topo to the latest version
-*   `topo remove` - Safely remove topo system integration
-*   `topo authorize` - Setup passwordless sudo for topo (optional)
+## Security & Safety Design
 
----
+Topo is built for performance but governed by safety. It uses **Home Directory Isolation** for manual cleanup and a **Global Whitelist** to ensure critical system paths remain untouched. 
 
-## 🤝 Contribution & Credits
+It adopts a **Zero-Interruption** policy: administrative tasks are pre-authorized so your "One-Key Clean" runs unattended from start to finish.
 
-*   **Inspired by**: [Mole](https://github.com/tw93/mole) (macOS)
-*   **Core Logic**: Python 3
-*   **Scanning Engine**: Rust (topo-core)
+## Features in Detail
 
-`topo` strives to be the most elegant and powerful optimization tool for the Linux community. Issues and Pull Requests are always welcome!
+### Deep System Cleanup
+
+```bash
+$ topo clean
+
+[EXECUTING] Starting system cleanup...
+
+  ✓ Package Manager Cache (DNF/APT)                          1.2 GB
+  ✓ System Journal Logs                                      450 MB
+  ✓ User Trash                                               2.8 GB
+  ✓ Browser & App Caches                                     8.4 GB
+  ✓ AI/LLM Models (Ollama/HF)                                12.5 GB
+
+============================================================
+Space freed: 25.3 GB | Free space now: 184.2 GB
+============================================================
+```
+
+### Smart App Uninstaller
+
+Select apps to remove and Topo will find all associated residues.
+
+```bash
+Select Apps to Remove
+═══════════════════════════
+▶ ☑ Visual Studio Code        (850M) | Active
+  ☐ Discord                   (420M) | Background
+  ☐ WeChat (Flatpak)          (1.2G) | Idle
+
+Uninstalling: Visual Studio Code
+
+  ✓ Terminated active processes
+  ✓ Removed package binaries
+  ✓ Cleaned residues in ~/.config/Code
+  ✓ Cleaned residues in ~/.cache/Code
+```
+
+### Intelligence Analyze
+
+Powered by a dedicated Rust engine, Topo scans hundreds of thousands of files in milliseconds.
+
+```bash
+Analyze Disk  ~  |  Total: 450.8 GB
+
+ ▶  1. ███████████████████  58.2%  |  📁 workspace                   262.4 GB
+    2. █████████░░░░░░░░░░  22.1%  |  📁 .cache                       98.6 GB
+    3. ███░░░░░░░░░░░░░░░░   8.3%  |  📁 Downloads                    34.2 GB
+    4. █░░░░░░░░░░░░░░░░░░   4.2%  |  📁 .local                       18.5 GB
+
+  ↑↓ Navigate  |  Enter Open  |  Space Select  |  D Delete  |  Q Quit
+```
+
+## Technical Advantages
+
+- **Multi-Arch Native**: Optimized binaries for both **x86_64** and **ARM64** (Apple Silicon, Raspberry Pi).
+- **Intelligent Silence**: "Silent on zero-gain" policy—only shows what actually matters.
+- **Zero-Latency UI**: Built-in **ScanCache** for instant directory navigation.
+- **Hybrid Power**: High-level flexibility of Python combined with the raw speed of Rust.
+
+## License
+
+MIT License. Developed with ❤️ for the Linux community.
