@@ -86,18 +86,25 @@ Free space now: 482.8 GB
 Select apps to remove and Topo will find all associated residues.
 
 ```bash
-Select Apps to Remove
-═══════════════════════════
-▶ ☑ Visual Studio Code        (850M) | Active
-  ☐ Discord                   (420M) | Background
-  ☐ WeChat (Flatpak)          (1.2G) | Idle
+Select Application to Uninstall
+--------------------------------------------------------------------------------
+  [1] google-chrome-stable                          4.0 GB | 5d ago
+  [2] cursor                                        1.0 GB | Yesterday
+  [3] net.thunderbird.Thunderbird                 871.2 MB | 4d ago
+  [4] wechat                                      750.6 MB | 0y ago
+  [✓] brave-browser                               449.1 MB | 5d ago
+▶ [✓] org.telegram.desktop                        351.5 MB | 4d ago
+  [7] libreoffice-core                            302.3 MB | 2d ago
+  [8] ibus                                        221.8 MB | 0y ago
+  [9] clash-verge                                 182.0 MB | 0y ago
+  [0] gnome-software                              128.0 MB | 0y ago
+--------------------------------------------------------------------------------
+ Page 1/8 | Keys 1-0: Select | ↑↓: Move | Space: Select | Enter: Confirm
+ S: Size | N: Name | T: Time | O: ↓ | Q: Exit
 
-Uninstalling: Visual Studio Code
-
-  ✓ Terminated active processes
-  ✓ Removed package binaries
-  ✓ Cleaned residues in ~/.config/Code
-  ✓ Cleaned residues in ~/.cache/Code
+ ☉ Selected Apps to Remove:
+   • brave-browser
+   • org.telegram.desktop
 ```
 
 ### Intelligence Analyze
