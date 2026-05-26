@@ -1,7 +1,7 @@
 use jwalk::WalkDir;
 use serde::{Deserialize, Serialize};
 use std::env;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::collections::HashMap;
 use std::time::Instant;
 use std::ffi::OsString;
