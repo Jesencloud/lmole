@@ -67,8 +67,26 @@ def get_old_items_info(dir_path: Path, days_threshold: int = 90) -> List[Dict[st
 def get_rust_scan_data(path: Path) -> Dict[str, Any]:
     cached = ScanCache.get(path)
     if cached: return cached
-    bin_path = Path(__file__).parent / "bin" / "topo-core"
+    
+    # 1. Detect architecture for binary selection
+    import platform
+    arch = platform.machine().lower()
+    
+    # Try architecture-specific binary first, then fallback
+    bin_dir = Path(__file__).parent / "bin"
+    if "x86_64" in arch or "amd64" in arch:
+        bin_path = bin_dir / "topo-core-x86_64"
+    elif "aarch64" in arch or "arm64" in arch:
+        bin_path = bin_dir / "topo-core-aarch64"
+    else:
+        bin_path = bin_dir / "topo-core"
+
+    # Final fallback if arch-specific not found
+    if not bin_path.exists():
+        bin_path = bin_dir / "topo-core"
+        
     if not bin_path.exists(): return None
+    
     try:
         res = subprocess.run([str(bin_path), str(path)], capture_output=True, text=True, timeout=30)
         if res.returncode == 0:

@@ -48,6 +48,24 @@ fi
 # 4. Clean up non-runtime artifacts (keep it lean and legal)
 echo -e "  ${GRAY}🧹 Refining installation directory...${NC}"
 cd "$INSTALL_DIR"
+
+# Detect architecture for binary cleanup
+ARCH=$(uname -m)
+BIN_DIR="src/core/bin"
+
+# If we only have the generic one, treat it as x86_64 (our current default)
+if [ -f "$BIN_DIR/topo-core" ] && [ ! -f "$BIN_DIR/topo-core-x86_64" ]; then
+    mv "$BIN_DIR/topo-core" "$BIN_DIR/topo-core-x86_64"
+fi
+
+if [[ "$ARCH" == "x86_64" ]]; then
+    echo -e "  ${GRAY}Detected x86_64, removing ARM64 binaries...${NC}"
+    rm -f "$BIN_DIR/topo-core-aarch64"
+elif [[ "$ARCH" == "aarch64" ]] || [[ "$ARCH" == "arm64" ]]; then
+    echo -e "  ${GRAY}Detected ARM64, removing x86_64 binaries...${NC}"
+    rm -f "$BIN_DIR/topo-core-x86_64"
+fi
+
 # Keep LICENSE for compliance, but remove everything else non-essential
 rm -rf tests/ daily_report.md pytest.ini topo.py .gitignore README.md topo-core/
 
