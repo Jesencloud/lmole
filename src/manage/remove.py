@@ -5,15 +5,10 @@ import time
 from pathlib import Path
 from ..core.system import get_invoking_user
 from ..core.file_ops import bytes_to_human, get_size
+from ..core.constants import MAGENTA, GREEN, GRAY, RESET, BOLD, BLUE, RED
 
 def run_remove(dry_run=False):
     """Removes topo from the system."""
-    # ANSI Colors
-    MAGENTA = "\033[1;35m"
-    GREEN = "\033[1;32m"
-    GRAY = "\033[1;90m"
-    RESET = "\033[0m"
-    BOLD = "\033[1m"
 
     print(f"\n {MAGENTA}☉ Removing topo from your system...{RESET}\n")
 
@@ -67,14 +62,14 @@ def run_remove(dry_run=False):
     print(f" {BOLD}The following items will be removed:{RESET}")
     for item in to_remove:
         size_str = bytes_to_human(get_size(item['path']))
-        print(f"  \033[1;32m✓\033[0m {str(item['path']).replace(str(Path.home()), '~'):<40} {GRAY}({item['desc']}, {size_str}){RESET}")
+        print(f"  {GREEN}✓{RESET} {str(item['path']).replace(str(Path.home()), '~'):<40} {GRAY}({item['desc']}, {size_str}){RESET}")
 
     if dry_run:
         print(f"\n {GREEN}✓{RESET} Dry run complete. Total to free: {bytes_to_human(total_size)}")
         return
 
     # 3. Confirmation (Mole-style)
-    print(f"\n \033[1;35m→\033[0m Remove topo, {bytes_to_human(total_size)}  \033[1;32mEnter\033[0m confirm, \033[1;90mESC\033[0m cancel: ", end="", flush=True)
+    print(f"\n {MAGENTA}→{RESET} Remove topo, {bytes_to_human(total_size)}  {GREEN}Enter{RESET} confirm, {GRAY}ESC{RESET} cancel: ", end="", flush=True)
 
     # Single-key capture
     import tty, termios
@@ -99,10 +94,10 @@ def run_remove(dry_run=False):
                 shutil.rmtree(p)
             else:
                 p.unlink()
-            print(f"  \033[0;32m✓\033[0m Removed {item['desc']}")
+            print(f"  {GREEN}✓{RESET} Removed {item['desc']}")
         except Exception as e:
-            print(f"  \033[1;31m✗\033[0m Failed to remove {p}: {e}")
+            print(f"  {RED}✗{RESET} Failed to remove {p}: {e}")
 
     print("\n" + "=" * 70)
-    print(f" \033[1;34mtopo has been removed from your system.{RESET}")
+    print(f" {BLUE}topo has been removed from your system.{RESET}")
     print("=" * 70 + "\n")

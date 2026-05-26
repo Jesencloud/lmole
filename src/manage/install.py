@@ -1,16 +1,10 @@
 import os
 import sys
 from pathlib import Path
+from ..core.constants import CYAN, GREEN, YELLOW, GRAY, RESET, BOLD, BLUE
 
 def run_install_link():
     """Creates a symbolic link for topo in ~/.local/bin."""
-    # ANSI Colors
-    CYAN = "\033[1;36m"
-    GREEN = "\033[1;32m"
-    YELLOW = "\033[1;33m"
-    GRAY = "\033[1;90m"
-    RESET = "\033[0m"
-    BOLD = "\033[1m"
 
     print(f"\n {CYAN}☉ Setting up system-wide 'topo' command...{RESET}\n")
 
@@ -47,7 +41,7 @@ def run_install_link():
 
     # 4. Success message & Path check
     print("\n" + "=" * 70)
-    print(f" \033[1;34mSuccess! 'topo' is now available.{RESET}")
+    print(f" {BLUE}Success! 'topo' is now available.{RESET}")
     
     path_env = os.environ.get("PATH", "")
     if str(target_dir) not in path_env:

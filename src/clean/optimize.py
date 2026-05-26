@@ -7,14 +7,7 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from ..core.system import run_command, has_sudo
 from ..core.file_ops import get_size, bytes_to_human
-
-# ANSI Colors
-GREEN = "\033[0;32m"
-YELLOW = "\033[0;33m"
-BLUE = "\033[0;34m"
-GRAY = "\033[1;90m"
-RESET = "\033[0m"
-BOLD = "\033[1m"
+from ..core.constants import GREEN, YELLOW, BLUE, GRAY, RESET, BOLD
 
 def opt_log(message, success=True, skipped=False):
     if skipped:

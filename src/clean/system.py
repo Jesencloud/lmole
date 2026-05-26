@@ -1,21 +1,6 @@
 import shutil
-import re
 from src.core.system import get_os_id, run_command
-from src.core.file_ops import bytes_to_human
-
-def parse_size_from_text(text):
-    """Simple parser for sizes like '1.2M', '500B', '2.5 GB' in command output."""
-    if not text: return 0
-    # Common patterns: 'freed 1.2M', 'total of 500 B', 'reclaimed 2.5 GB'
-    match = re.search(r'([0-9.]+)\s*([KMGTB]?B|[KMG])', text, re.IGNORECASE)
-    if match:
-        val = float(match.group(1))
-        unit = match.group(2).upper()
-        if 'G' in unit: val *= 1024 * 1024 * 1024
-        elif 'M' in unit: val *= 1024 * 1024
-        elif 'K' in unit: val *= 1024
-        return int(val)
-    return 0
+from src.core.file_ops import bytes_to_human, parse_size_from_text
 
 def clean_package_manager(dry_run=False):
     freed = 0

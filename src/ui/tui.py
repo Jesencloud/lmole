@@ -1,16 +1,6 @@
 import os
 import sys
-
-# ANSI Colors
-BLUE = "\033[1;34m"
-CYAN = "\033[1;36m"
-MAGENTA = "\033[1;35m"
-YELLOW = "\033[1;33m"
-WHITE = "\033[1;37m"
-GRAY = "\033[1;90m"
-RESET = "\033[0m"
-BOLD = "\033[1m"
-PURPLE = "\033[1;95m"
+from ..core.constants import BLUE, CYAN, MAGENTA, YELLOW, WHITE, GRAY, RESET, BOLD, PURPLE
 
 def show_banner():
     # Detect the calling command name

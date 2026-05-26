@@ -5,17 +5,8 @@ import os
 import time
 import select
 from pathlib import Path
-
-# Reusable UI Constants
-GRAY = "\033[1;90m"
-RESET = "\033[0m"
-WHITE = "\033[1;37m"
-BOLD = "\033[1m"
-BLUE = "\033[1;34m"
-CYAN = "\033[1;36m"
-MAGENTA = "\033[1;35m"
-YELLOW = "\033[1;33m"
-LIGHT_BLUE = "\033[0;94m"
+from ..core.constants import GRAY, RESET, WHITE, BOLD, BLUE, CYAN, MAGENTA, YELLOW, GREEN, RED
+from ..core.file_ops import bytes_to_human
 
 def get_display_width(s: str) -> int:
     """Calculates visual width of a string, accounting for CJK characters."""
@@ -44,9 +35,9 @@ def draw_bar(percentage: float, width: int = 20, force_color: str = None) -> str
     empty = width - filled
     if force_color: color = force_color
     else:
-        if safe_percent < 50: color = "\033[1;32m"
-        elif safe_percent < 80: color = "\033[1;33m"
-        else: color = "\033[1;31m"
+        if safe_percent < 50: color = GREEN
+        elif safe_percent < 80: color = YELLOW
+        else: color = RED
     return f"{color}{'▬' * filled}{RESET}{GRAY}{'▬' * empty}{RESET}"
 
 class Navigator:
@@ -132,7 +123,6 @@ class AnalyzeSelector:
         elif available > 20: bar_w = 10; name_w = available - bar_w
         else: bar_w = 0; name_w = max(15, available)
         print(f"{hint}\n")
-        from ..core.file_ops import bytes_to_human
         for i, item in enumerate(self.items):
             is_hover = i == self.selected_index
             is_selected = i in self.selected_items
@@ -354,7 +344,6 @@ class TopFilesSelector:
     def render(self):
         os.system('clear'); import shutil; columns = shutil.get_terminal_size().columns
         print(f"\n \033[1;33m{self.title}\033[0m"); print("-" * (columns - 2))
-        from ..core.file_ops import bytes_to_human
         viewport_size = 20; start_idx = max(0, self.selected_index - viewport_size // 2)
         end_idx = min(len(self.items), start_idx + viewport_size)
         if end_idx - start_idx < viewport_size: start_idx = max(0, end_idx - viewport_size)
@@ -420,7 +409,6 @@ class CleanSelector:
         self.selected_items = set(range(len(items)))
     def render(self):
         os.system('clear'); print(f"\n \033[1;36m{self.title}\033[0m"); print("-" * 65)
-        from ..core.file_ops import bytes_to_human
         total_freed = 0
         for i, item in enumerate(self.items):
             is_hover = i == self.selected_index; is_checked = i in self.selected_items

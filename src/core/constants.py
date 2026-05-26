@@ -79,3 +79,16 @@ PURGE_CONFIG_FILE = Path.home() / ".config" / "topo" / "purge_paths"
 
 # Minimum age in days before considering for cleanup
 MIN_AGE_DAYS = 7
+
+# --- UI / ANSI Colors ---
+BLUE = "\033[1;34m"
+CYAN = "\033[1;36m"
+MAGENTA = "\033[1;35m"
+YELLOW = "\033[1;33m"
+GREEN = "\033[1;32m"
+RED = "\033[1;31m"
+WHITE = "\033[1;37m"
+GRAY = "\033[1;90m"
+RESET = "\033[0m"
+BOLD = "\033[1m"
+PURPLE = "\033[1;95m"

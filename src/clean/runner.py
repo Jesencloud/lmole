@@ -6,13 +6,7 @@ from .system import clean_package_manager, clean_journal
 from .user import clean_user_data
 from .apps import clean_apps_deep
 from .dev import clean_developer_tools
-
-# ANSI Colors
-CYAN = "\033[1;36m"
-GREEN = "\033[1;32m"
-YELLOW = "\033[1;33m"
-GRAY = "\033[1;90m"
-RESET = "\033[0m"
+from ..core.constants import CYAN, GREEN, YELLOW, GRAY, RESET, BLUE, BOLD, MAGENTA, RED, WHITE, PURPLE
 
 def run_clean(dry_run=False):
     # 1. Prepare categories
@@ -24,7 +18,7 @@ def run_clean(dry_run=False):
         {"name": "Developer Artifacts", "func": clean_developer_tools}
     ]
 
-    mode_label = "\033[1;36m[PREVIEW]\033[0m" if dry_run else "\033[1;95m[EXECUTING]\033[0m"
+    mode_label = f"{CYAN}[PREVIEW]{RESET}" if dry_run else f"{PURPLE}[EXECUTING]{RESET}"
     print(f"{mode_label} Starting system cleanup...\n")
 
     # Pre-authorize sudo to avoid interrupting the progress list
@@ -51,10 +45,10 @@ def run_clean(dry_run=False):
     
     print("\n" + "=" * 60)
     status_text = "Scan complete (Preview)" if dry_run else "Cleanup complete"
-    print(f"\033[1;34m{status_text}\033[0m")
+    print(f"{BLUE}{status_text}{RESET}")
     
     size_label = "Space that can be freed" if dry_run else "Space freed"
-    print(f"{size_label}: \033[1;32m{bytes_to_human(total_size)}\033[0m | Items: {total_items} | Categories: {total_categories}")
+    print(f"{size_label}: {GREEN}{bytes_to_human(total_size)}{RESET} | Items: {total_items} | Categories: {total_categories}")
     
     if not dry_run:
         movies = total_size / (8 * 1024 * 1024 * 1024)

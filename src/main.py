@@ -13,22 +13,11 @@ from .core.system import get_os_id, ensure_sudo_session, setup_passwordless_sudo
 from .core.status import show_status
 from .core.analyze import run_deep_analysis
 from .core.whitelist import add_to_whitelist, remove_from_whitelist
+from .core.constants import BLUE, CYAN, MAGENTA, YELLOW, GREEN, RED, WHITE, GRAY, RESET, BOLD
 from .manage.remove import run_remove
 from .manage.install import run_install_link
 from .manage.update import run_update
 from .ui.tui import main_menu
-
-# ANSI Colors
-BLUE = "\033[1;34m"
-CYAN = "\033[1;36m"
-MAGENTA = "\033[1;35m"
-YELLOW = "\033[1;33m"
-GREEN = "\033[1;32m"
-RED = "\033[1;31m"
-WHITE = "\033[1;37m"
-GRAY = "\033[1;90m"
-RESET = "\033[0m"
-BOLD = "\033[1m"
 
 def main():
     parser = argparse.ArgumentParser(

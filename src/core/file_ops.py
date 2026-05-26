@@ -1,10 +1,25 @@
 import os
 import shutil
 import subprocess
+import re
 from pathlib import Path
 from typing import Tuple, Union
 
 from .whitelist import is_protected
+
+def parse_size_from_text(text: str) -> int:
+    """Simple parser for sizes like '1.2M', '500B', '2.5 GB' in command output."""
+    if not text: return 0
+    # Common patterns: 'freed 1.2M', 'total of 500 B', 'reclaimed 2.5 GB'
+    match = re.search(r'([0-9.]+)\s*([KMGTB]?B|[KMG])', text, re.IGNORECASE)
+    if match:
+        val = float(match.group(1))
+        unit = match.group(2).upper()
+        if 'G' in unit: val *= 1000 * 1000 * 1000
+        elif 'M' in unit: val *= 1000 * 1000
+        elif 'K' in unit: val *= 1000
+        return int(val)
+    return 0
 
 def get_size(path: Union[str, Path]) -> int:
     """Recursive size calculation in bytes. Follows symlinks but doesn't recurse into them."""
