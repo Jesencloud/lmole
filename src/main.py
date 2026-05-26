@@ -89,6 +89,7 @@ def run_clean(dry_run=False):
 from .manage.uninstall import UninstallManager
 from .manage.self_uninstall import run_self_uninstall
 from .manage.install import run_install_link
+from .manage.update import run_update
 from .ui.navigator import PaginatedSelector, UninstallSelector
 
 # ANSI Colors
@@ -283,6 +284,7 @@ Examples:
   topo clean           Run one-key safe cleanup
   topo analyze         Start interactive disk usage explorer
   topo status          Check system health and metrics
+  topo update          Upgrade to the latest version
   topo whitelist list  View currently protected paths
   topo --dry-run clean Preview files to be cleaned without deleting
 """
@@ -293,6 +295,7 @@ Examples:
 
     # --- Core Actions ---
     subparsers.add_parser("clean", help="One-key safe disk cleanup")
+    subparsers.add_parser("update", help="Update topo to the latest version")
     subparsers.add_parser("purge", help="Interactive project artifact purging")
     subparsers.add_parser("uninstall", help="Completely remove applications and residues")
     subparsers.add_parser("optimize", help="Run system maintenance (fstrim, databases, etc.)")
@@ -395,6 +398,9 @@ Examples:
 
     if args.command == "link":
         run_install_link()
+
+    if args.command == "update":
+        run_update()
 
     if args.command == "remove":
         run_self_uninstall(args.dry_run)

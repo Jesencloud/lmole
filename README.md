@@ -74,6 +74,7 @@ Alternatively, use CLI commands:
 *   `topo optimize` - Run system maintenance tasks
 *   `topo analyze` - Enter deep disk analysis mode
 *   `topo status` - View real-time system health
+*   `topo update` - Update topo to the latest version
 *   `topo remove` - Safely remove topo system integration
 *   `topo authorize` - Setup passwordless sudo for topo (optional)
 
