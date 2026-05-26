@@ -51,22 +51,19 @@ cd "$INSTALL_DIR"
 
 ARCH=$(uname -m)
 BIN_DIR="src/core/bin"
-RAW_URL="https://raw.githubusercontent.com/Jesencloud/Topo/main/src/core/bin"
+# Point to the latest release assets
+RELEASE_URL="https://github.com/Jesencloud/Topo/releases/latest/download"
 
 # Ensure binary directory exists
 mkdir -p "$BIN_DIR"
 
 if [[ "$ARCH" == "x86_64" ]]; then
-    if [ ! -f "$BIN_DIR/topo-core-x86_64" ]; then
-        echo -e "  ${GRAY}↓ Fetching x86_64 engine...${NC}"
-        curl -fsSL "$RAW_URL/topo-core-x86_64" -o "$BIN_DIR/topo-core-x86_64"
-    fi
+    echo -e "  ${GRAY}↓ Fetching x86_64 engine from latest release...${NC}"
+    curl -fsSL "$RELEASE_URL/topo-core-x86_64" -o "$BIN_DIR/topo-core-x86_64" || echo -e "  ${RED}⚠ Warning: Could not download x86_64 engine.${NC}"
     rm -f "$BIN_DIR/topo-core-aarch64"
 elif [[ "$ARCH" == "aarch64" ]] || [[ "$ARCH" == "arm64" ]]; then
-    if [ ! -f "$BIN_DIR/topo-core-aarch64" ]; then
-        echo -e "  ${YELLOW}↓ ARM64 detected. Fetching optimized engine...${NC}"
-        curl -fsSL "$RAW_URL/topo-core-aarch64" -o "$BIN_DIR/topo-core-aarch64" || echo -e "  ${RED}⚠ Warning: Could not download ARM64 engine. You may need to build it manually.${NC}"
-    fi
+    echo -e "  ${YELLOW}↓ ARM64 detected. Fetching optimized engine from latest release...${NC}"
+    curl -fsSL "$RELEASE_URL/topo-core-aarch64" -o "$BIN_DIR/topo-core-aarch64" || echo -e "  ${RED}⚠ Warning: Could not download ARM64 engine.${NC}"
     rm -f "$BIN_DIR/topo-core-x86_64"
 fi
 chmod +x $BIN_DIR/topo-core-* 2>/dev/null || true
