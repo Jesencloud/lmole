@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <img src="topo.png" alt="Topo - Clean Your Linux" width="400" />
+  <img src="topo.png" alt="Topo - Clean Your Linux" width="800" />
 </p>
 
 > The most elegant way to keep your Linux system lean and mean. Inspired by the minimalist philosophy of [Mole](https://github.com/tw93/mole) on macOS.
