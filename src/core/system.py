@@ -50,6 +50,9 @@ def ensure_sudo_session():
         # It doesn't run a command, just refreshes the timer.
         res = subprocess.run(["sudo", "-v"], capture_output=False)
         return res.returncode == 0
+    except KeyboardInterrupt:
+        print() # Add a newline after ^C
+        return False
     except:
         return False
 

@@ -23,7 +23,7 @@ def run_clean(dry_run=False):
 
     # Pre-authorize sudo to avoid interrupting the progress list
     if not dry_run:
-        print(f" {GRAY}🔒 Authorizing system-level tasks...{RESET}")
+        print(f" {GRAY}🔒 Authorizing system-level tasks (Ctrl+C to skip)...{RESET}")
         if not ensure_sudo_session():
             print(f" {YELLOW}⚠️  Note: Some system caches will be skipped due to lack of permission.{RESET}\n")
         else:

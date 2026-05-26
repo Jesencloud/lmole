@@ -102,7 +102,7 @@ Examples:
             elif choice == "2":
                 run_uninstall()
             elif choice == "3":
-                print("🔒 Authorizing optimization tasks...")
+                print("\033[1;90m🔒 Authorizing optimization tasks (Ctrl+C to skip)...\033[0m")
                 ensure_sudo_session()
                 optimize_system(args.dry_run)
                 input("\nPress Enter to return to menu...")
@@ -137,7 +137,7 @@ Examples:
         show_status()
 
     if args.command == "optimize":
-        print("🔒 Authorizing optimization tasks...")
+        print("\033[1;90m🔒 Authorizing optimization tasks (Ctrl+C to skip)...\033[0m")
         ensure_sudo_session()
         optimize_system(args.dry_run)
 
