@@ -53,14 +53,17 @@ class Navigator:
 
     @staticmethod
     def get_key():
-        """The original stable key reader."""
+        """The original stable key reader, fixed for isolated ESC keys."""
         fd = sys.stdin.fileno()
         old_settings = termios.tcgetattr(fd)
         try:
             tty.setraw(sys.stdin.fileno())
             ch = sys.stdin.read(1)
             if ch == '\x1b':
-                ch += sys.stdin.read(2)
+                # Check if it's an arrow key sequence or just a lone ESC
+                r, _, _ = select.select([sys.stdin], [], [], 0.1)
+                if r:
+                    ch += sys.stdin.read(2)
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
@@ -87,7 +90,7 @@ class InteractiveMenu:
         print("-" * 50)
         print(f"{GRAY} ↑/↓: Navigate | Enter: Select | ESC: Quit{RESET}")
 
-    def run(self):
+        def run(self):
         Navigator.hide_cursor()
         try:
             while True:
