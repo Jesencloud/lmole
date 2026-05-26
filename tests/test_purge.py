@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from src.purge.scanner import Scanner
+from src.clean.project import Scanner
 
 def test_is_project_root(test_env):
     scanner = Scanner([])

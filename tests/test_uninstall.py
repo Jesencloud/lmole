@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
-from src.manage.uninstall import UninstallManager
+from src.clean.app_manager import UninstallManager
 
 def test_parse_size_to_bytes():
     mgr = UninstallManager()
@@ -47,7 +47,7 @@ def test_scan_flatpaks(mock_run, mock_which):
     assert mgr.apps[0]['type'] == "Flatpak"
     assert mgr.apps[0]['size_bytes'] == 1200_000_000
 
-@patch("src.manage.uninstall.run_command")
+@patch("src.clean.app_manager.run_command")
 def test_uninstall_app_flatpak(mock_run_cmd, test_env):
     mgr = UninstallManager()
     mgr.apps = [{

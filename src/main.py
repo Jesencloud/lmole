@@ -11,7 +11,7 @@ from .clean.optimize import optimize_system
 from .core.system import get_os_id, ensure_sudo_session, setup_passwordless_sudo
 from .core.status import show_status
 from .core.analyze import run_deep_analysis
-from .purge.manager import PurgeManager
+from .clean.project import PurgeManager
 from .ui.menu import interactive_select
 from .ui.tui import main_menu
 
@@ -86,8 +86,8 @@ def run_clean(dry_run=False):
         print(f"\n{GRAY}ℹ️  Run without --dry-run to actually delete these files.{RESET}")
 
 
-from .manage.uninstall import UninstallManager
-from .manage.self_uninstall import run_self_uninstall
+from .clean.app_manager import UninstallManager
+from .manage.remove import run_remove
 from .manage.install import run_install_link
 from .manage.update import run_update
 from .ui.navigator import PaginatedSelector, UninstallSelector
@@ -403,7 +403,7 @@ Examples:
         run_update()
 
     if args.command == "remove":
-        run_self_uninstall(args.dry_run)
+        run_remove(args.dry_run)
 
 if __name__ == "__main__":
     main()

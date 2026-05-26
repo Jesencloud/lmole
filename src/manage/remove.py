@@ -6,7 +6,7 @@ from pathlib import Path
 from ..core.system import get_invoking_user
 from ..core.file_ops import bytes_to_human, get_size
 
-def run_self_uninstall(dry_run=False):
+def run_remove(dry_run=False):
     """Removes topo from the system."""
     # ANSI Colors
     MAGENTA = "\033[1;35m"
