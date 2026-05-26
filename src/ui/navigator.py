@@ -57,13 +57,15 @@ class Navigator:
         fd = sys.stdin.fileno()
         old_settings = termios.tcgetattr(fd)
         try:
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
+            tty.setraw(fd)
+            # Use os.read to bypass Python's stdin buffer which breaks select()
+            ch_bytes = os.read(fd, 1)
+            ch = ch_bytes.decode('utf-8', 'ignore')
             if ch == '\x1b':
                 # Check if it's an arrow key sequence or just a lone ESC
-                r, _, _ = select.select([sys.stdin], [], [], 0.1)
+                r, _, _ = select.select([fd], [], [], 0.1)
                 if r:
-                    ch += sys.stdin.read(2)
+                    ch += os.read(fd, 2).decode('utf-8', 'ignore')
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
@@ -90,7 +92,7 @@ class InteractiveMenu:
         print("-" * 50)
         print(f"{GRAY} ↑/↓: Navigate | Enter: Select | ESC: Quit{RESET}")
 
-        def run(self):
+    def run(self):
         Navigator.hide_cursor()
         try:
             while True:
@@ -99,7 +101,8 @@ class InteractiveMenu:
                 if key == Navigator.UP: self.selected_index = (self.selected_index - 1) % len(self.options)
                 elif key == Navigator.DOWN: self.selected_index = (self.selected_index + 1) % len(self.options)
                 elif key == Navigator.ENTER: return self.selected_index
-                elif key.lower() == Navigator.Q or key == Navigator.ESC: return None
+                elif key == Navigator.ESC: return None
+                # Ignore other unrecognized keys (like LEFT/RIGHT)
         finally: Navigator.show_cursor()
 
 class AnalyzeSelector:
@@ -201,7 +204,7 @@ class AnalyzeSelector:
                     if len(self.selected_items) == len(self.items): self.selected_items.clear()
                     else: self.selected_items = set(range(len(self.items)))
                 elif key.lower() == 'f': return "SWITCH_FILES", None
-                elif key.lower() == 'q' or key == Navigator.ESC: return "QUIT", None
+                elif key == Navigator.ESC: return "QUIT", None
         finally: Navigator.show_cursor()
 
 class PaginatedSelector:
@@ -244,14 +247,14 @@ class PaginatedSelector:
                 elif key.lower() == 'p':
                     if not self.selected_items: continue
                     return list(self.selected_items)
-                elif key.lower() == 'q' or key == Navigator.ESC: return []
+                elif key == Navigator.ESC: return []
         finally: Navigator.show_cursor()
 
 class UninstallSelector:
     def __init__(self, title, items):
         self.title = title; self.items = items; self.selected_index = 0
         self.selected_ids = set(); self.sort_key = 'size_bytes'
-        self.sort_reverse = True; self.page_size = 10; self.current_page = 0
+        self.sort_reverse = True; self.page_size = 15; self.current_page = 0
         self._sort_items()
     def _format_time_ago(self, timestamp):
         if timestamp == 0: return "Unknown"
@@ -273,16 +276,18 @@ class UninstallSelector:
             start = self.current_page * self.page_size; end = min(start + self.page_size, total_len)
             for i in range(start, end):
                 item = self.items[i]; is_hover = i == self.selected_index; is_selected = item['id'] in self.selected_ids
-                num_key = "0" if (i - start) + 1 == 10 else str((i - start) + 1)
+                num_key = str((i - start) + 1)
                 cursor = "\033[1;36m▶\033[0m" if is_hover else " "
-                checkbox = "[\033[1;32m✓\033[0m]" if is_selected else f"[{num_key}]"
+                # Ensure 2-digit padding for alignment
+                check_inner = "\033[1;32m✓ \033[0m" if is_selected else f"{num_key:<2}"
+                checkbox = f"[{check_inner}]"
                 name_style = "\033[1;35m" if is_selected else "\033[1;36m" if is_hover else ""
                 name_padded = pad_and_truncate(item['name'], 35)
                 time_str = self._format_time_ago(item['install_time'])
                 print(f"{cursor} {checkbox} {name_style}{name_padded}{RESET}     {item['size_str']:>12} | {time_str}")
-            print("-" * 80); order_icon = "↑" if not self.sort_reverse else "↓"
-            print(f" Page {self.current_page + 1}/{total_pages} | {GRAY}Keys 1-0: Select | ↑↓: Move | Space: Select | Enter: Confirm{RESET}")
-            print(f"{GRAY} S: Size | N: Name | T: Time | O: {order_icon} | ESC: Exit{RESET}")
+            print("-" * 80); order_icon = "↓" if self.sort_reverse else "↑"
+            footer = f" Page {self.current_page + 1}/{total_pages} | {GRAY}Space: Select | Enter: Confirm | S/N/T/O: Sort {order_icon} | ESC: Exit{RESET}"
+            print(footer)
         if self.selected_ids:
             print(f"\n \033[1;35m☉ Selected Apps to Remove:\033[0m")
             count = 0
@@ -304,6 +309,16 @@ class UninstallSelector:
                     if total_len > 0:
                         self.selected_index = (self.selected_index + 1) % total_len
                         self.current_page = self.selected_index // self.page_size
+                elif key == Navigator.RIGHT:
+                    total_pages = (total_len + self.page_size - 1) // self.page_size
+                    if total_pages > 1:
+                        self.current_page = (self.current_page + 1) % total_pages
+                        self.selected_index = self.current_page * self.page_size
+                elif key == Navigator.LEFT:
+                    total_pages = (total_len + self.page_size - 1) // self.page_size
+                    if total_pages > 1:
+                        self.current_page = (self.current_page - 1) % total_pages
+                        self.selected_index = self.current_page * self.page_size
                 elif key == Navigator.SPACE and total_len > 0:
                     item_id = self.items[self.selected_index]['id']
                     if item_id in self.selected_ids: self.selected_ids.remove(item_id)
@@ -338,7 +353,7 @@ class UninstallSelector:
                         if total_len > 0: return [self.selected_index]
                         continue
                     return [i for i, item in enumerate(self.items) if item['id'] in self.selected_ids]
-                elif key.lower() == 'q' or key == Navigator.ESC: return []
+                elif key == Navigator.ESC: return []
         finally: Navigator.show_cursor()
 
 class TopFilesSelector:
@@ -381,7 +396,7 @@ class TopFilesSelector:
                 elif key == Navigator.ENTER:
                     if not self.selected_items: continue
                     return list(self.selected_items)
-                elif key.lower() == 'q' or key == Navigator.ESC: return []
+                elif key == Navigator.ESC: return []
         finally: Navigator.show_cursor()
 
 class ConfirmSelector:
@@ -436,5 +451,5 @@ class CleanSelector:
                 elif key == Navigator.ENTER:
                     if not self.selected_items: continue
                     return list(self.selected_items)
-                elif key.lower() == 'q' or key == Navigator.ESC: return []
+                elif key == Navigator.ESC: return []
         finally: Navigator.show_cursor()

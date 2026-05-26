@@ -11,7 +11,7 @@ def show_banner():
   ████████  ██████  ██████   ██████ 
      ██    ██    ██ ██   ██ ██    ██
      ██    ██    ██ ██████  ██    ██
-     ██    ██    ██ ██      ██    ██
+     ██    ██ 🦡 ██ ██      ██    ██
      ██     ██████  ██       ██████ 
 {RESET}
  {CYAN}●{RESET} {BOLD}{cmd_name}{RESET} {GRAY}is digging deeper 🦡 🦡 🦡{RESET}"""
