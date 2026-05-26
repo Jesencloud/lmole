@@ -2,6 +2,8 @@ import os
 import shutil
 import subprocess
 import time
+import sys
+import select
 from pathlib import Path
 from typing import List, Dict, Any
 from ..core.system import run_command, get_os_id
