@@ -16,7 +16,7 @@ def run_update():
     if version_file.exists():
         local_version = version_file.read_text().strip()
 
-    print(f"\n {CYAN}🚀 Checking for updates...{RESET} (Local: v{local_version})")
+    print(f" {CYAN}🚀 Checking for updates...{RESET} (Local: v{local_version})")
 
     # 2. Fetch remote version
     remote_version_url = "https://raw.githubusercontent.com/Jesencloud/Topo/main/VERSION"

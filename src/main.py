@@ -127,7 +127,7 @@ Examples:
     # CLI Mode Execution
     print(f"\033[1;34mtopo {TOPO_VERSION} (Python Edition)\033[0m")
     os_id = get_os_id()
-    print(f"System: {os_id}\n")
+    print(f"System: {os_id}")
 
     if args.command in ("clean", "all"):
         run_clean(args.dry_run)
