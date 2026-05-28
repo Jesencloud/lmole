@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from ..core.analyze import ScanCache
-from ..core.constants import BOLD, GRAY, GREEN, MAGENTA, RESET
+from ..core.constants import BOLD, GRAY, GREEN, MAGENTA, RESET, YELLOW
 from ..core.file_ops import bytes_to_human, safe_remove
 from ..core.system import get_os_id, run_command
 from ..ui.navigator import Navigator, UninstallSelector
@@ -69,11 +69,46 @@ class UninstallManager:
         return list(keywords)
 
     def run_full_scan(self) -> list[dict[str, Any]]:
-        """Scans for both DNF (RPM) and Flatpak applications."""
+        """Scans for user-facing applications (DNF and Flatpak)."""
         apps = []
         os_id = get_os_id()
 
-        # 1. DNF (RPM) Scan
+        # 1. Pre-scan: Identify RPMs that provide desktop files (User Apps)
+        user_app_packages = set()
+        if os_id in ("fedora", "rhel", "centos") and shutil.which("rpm"):
+            try:
+                # Find all .desktop files in standard system paths
+                desktop_dirs = [
+                    "/usr/share/applications",
+                    str(Path.home() / ".local/share/applications"),
+                ]
+                desktop_files = []
+                for d in desktop_dirs:
+                    p = Path(d)
+                    if p.exists():
+                        desktop_files.extend([str(f) for f in p.glob("*.desktop")])
+
+                if desktop_files:
+                    # Query RPM to see which package owns these desktop files
+                    # We process in batches to avoid 'argument list too long'
+                    batch_size = 500
+                    for i in range(0, len(desktop_files), batch_size):
+                        batch = desktop_files[i : i + batch_size]
+                        res = subprocess.run(
+                            ["rpm", "-qf", "--queryformat", "%{NAME}\n"] + batch,
+                            capture_output=True,
+                            text=True,
+                        )
+                        if res.stdout:
+                            for line in res.stdout.splitlines():
+                                if not line.startswith(
+                                    "file "
+                                ):  # Filter out 'file X is not owned by any package'
+                                    user_app_packages.add(line.strip())
+            except Exception:
+                pass
+
+        # 2. DNF (RPM) Scan - Filtered by user_app_packages
         if os_id in ("fedora", "rhel", "centos") and shutil.which("rpm"):
             try:
                 # Get all installed packages with their size and install time
@@ -91,20 +126,23 @@ class UninstallManager:
                                 int(parts[1]),
                                 int(parts[2]),
                             )
-                            apps.append(
-                                {
-                                    "id": app_id,
-                                    "name": app_id,
-                                    "size_bytes": size_bytes,
-                                    "size_str": bytes_to_human(size_bytes),
-                                    "type": "DNF",
-                                    "install_time": install_time,
-                                }
-                            )
+
+                            # SMART FILTER: Only include if it's a known user app or very large (> 100MB)
+                            if app_id in user_app_packages or size_bytes > 100 * 1024 * 1024:
+                                apps.append(
+                                    {
+                                        "id": app_id,
+                                        "name": app_id,
+                                        "size_bytes": size_bytes,
+                                        "size_str": bytes_to_human(size_bytes),
+                                        "type": "DNF",
+                                        "install_time": install_time,
+                                    }
+                                )
             except Exception:
                 pass
 
-        # 2. Flatpak Scan
+        # 3. Flatpak Scan
         if shutil.which("flatpak"):
             try:
                 res = subprocess.run(
