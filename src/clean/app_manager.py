@@ -37,7 +37,6 @@ class UninstallManager:
 
     def _get_app_localized_name(self, desktop_file: Path, name: str) -> str:
         """Tries to find Name[zh_CN] or Name in .desktop file."""
-        localized_name = ""
         english_name = ""
         try:
             with open(desktop_file, errors="ignore") as f:

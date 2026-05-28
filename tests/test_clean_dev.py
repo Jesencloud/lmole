@@ -1,6 +1,14 @@
 from unittest.mock import MagicMock, patch
-from pathlib import Path
-from src.clean.dev import clean_docker, clean_tool_cache, clean_podman, clean_multipass, clean_ai_models, clean_developer_tools
+
+from src.clean.dev import (
+    clean_ai_models,
+    clean_developer_tools,
+    clean_docker,
+    clean_multipass,
+    clean_podman,
+    clean_tool_cache,
+)
+
 
 def test_clean_tool_cache_dry_run():
     """Verify tool cache cleanup logic in dry-run mode."""
@@ -28,7 +36,7 @@ def test_clean_docker_execution(mock_sub_run, mock_run_cmd, mock_which):
 @patch("src.clean.dev.run_command")
 def test_clean_podman(mock_run_cmd, mock_which):
     mock_which.return_value = "/usr/bin/podman"
-    
+
     with patch("src.clean.dev.clean_path_by_age", return_value=(100, 1)):
         size, items = clean_podman(dry_run=False)
         assert items == 2 # 1 for prune, 1 for cache
@@ -54,11 +62,11 @@ def test_clean_ai_models(mock_clean_age):
 def test_clean_developer_tools(mock_clean_tool, mock_which):
     mock_which.return_value = "/usr/bin/npm" # Mock npm presence
     mock_clean_tool.return_value = (100, 1)
-    
-    with patch("src.clean.dev.get_size", return_value=2048):
-        with patch("pathlib.Path.exists", return_value=True):
-            with patch("shutil.rmtree"):
-                size, items, cats = clean_developer_tools(dry_run=False)
-                assert cats > 0
-                assert size > 0
+
+    with patch("src.clean.dev.get_size", return_value=2048), patch(
+        "pathlib.Path.exists", return_value=True
+    ), patch("shutil.rmtree"):
+        size, items, cats = clean_developer_tools(dry_run=False)
+        assert cats > 0
+        assert size > 0
 

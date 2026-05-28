@@ -1,35 +1,46 @@
-from unittest.mock import patch, MagicMock
 from pathlib import Path
-from src.clean.apps import clean_app_generic, proactive_app_detection, clean_generic_xdg_caches, clean_orphaned_remnants
+from unittest.mock import MagicMock, patch
+
+from src.clean.apps import (
+    clean_app_generic,
+    clean_generic_xdg_caches,
+    clean_orphaned_remnants,
+    proactive_app_detection,
+)
+
 
 def test_proactive_app_detection():
-    with patch("src.clean.apps.DETECTED_APPS_FILE", Path("/tmp/nonexistent")):
-        with patch("pathlib.Path.exists", return_value=False):
-            detected = proactive_app_detection()
-            assert isinstance(detected, dict)
+    with patch("src.clean.apps.DETECTED_APPS_FILE", Path("/tmp/nonexistent")), patch(
+        "pathlib.Path.exists", return_value=False
+    ):
+        detected = proactive_app_detection()
+        assert isinstance(detected, dict)
+
 
 def test_proactive_app_detection_health_check(test_env):
     mock_registry = test_env / "detected_apps.json"
     mock_registry.write_text('{"dead_app": {"paths": ["/tmp/nonexistent"], "procs": ["dead_app"]}}')
-    
-    with patch("src.clean.apps.DETECTED_APPS_FILE", mock_registry):
-        with patch("shutil.which", return_value=None):
-            with patch("pathlib.Path.exists", return_value=False):
-                with patch("pathlib.Path.iterdir", return_value=[]):
-                    detected = proactive_app_detection()
-                    assert "dead_app" not in detected
+
+    with patch("src.clean.apps.DETECTED_APPS_FILE", mock_registry), patch(
+        "shutil.which", return_value=None
+    ), patch("pathlib.Path.exists", return_value=False), patch(
+        "pathlib.Path.iterdir", return_value=[]
+    ):
+        detected = proactive_app_detection()
+        assert "dead_app" not in detected
+
 
 def test_proactive_app_detection_write_error(test_env):
     # Mock finding a new app but fail to write the registry
-    with patch("shutil.which", return_value="/usr/bin/new_app"):
-        with patch("pathlib.Path.iterdir") as mock_iter:
-            m_dir = MagicMock()
-            m_dir.is_dir.return_value = True
-            m_dir.name = "new_app"
-            mock_iter.return_value = [m_dir]
-            with patch("builtins.open", side_effect=Exception("Write failed")):
-                detected = proactive_app_detection()
-                assert "new_app" in detected
+    with patch("shutil.which", return_value="/usr/bin/new_app"), patch(
+        "pathlib.Path.iterdir"
+    ) as mock_iter, patch("builtins.open", side_effect=Exception("Write failed")):
+        m_dir = MagicMock()
+        m_dir.is_dir.return_value = True
+        m_dir.name = "new_app"
+        mock_iter.return_value = [m_dir]
+        detected = proactive_app_detection()
+        assert "new_app" in detected
 
 def test_clean_flatpak_unused():
     from src.clean.apps import clean_flatpak_unused
@@ -38,7 +49,7 @@ def test_clean_flatpak_unused():
         size, items = clean_flatpak_unused(dry_run=True)
         assert size == 0
         assert items == 0
-        
+
         # Real run
         with patch("src.clean.apps.run_command") as mock_run:
             mock_run.return_value = MagicMock(stdout="Uninstalling\nfreed 1 GB")
@@ -47,21 +58,23 @@ def test_clean_flatpak_unused():
             assert size > 0
 
 def test_clean_generic_xdg_caches(test_env):
-    with patch("pathlib.Path.home", return_value=test_env):
-        with patch("src.clean.apps.clean_path_by_age", return_value=(100, 1)):
-            cache_dir = test_env / ".cache/dummy_cache"
-            cache_dir.mkdir(parents=True)
-            size, items = clean_generic_xdg_caches(dry_run=True)
-            assert items >= 0
+    with patch("pathlib.Path.home", return_value=test_env), patch(
+        "src.clean.apps.clean_path_by_age", return_value=(100, 1)
+    ):
+        cache_dir = test_env / ".cache/dummy_cache"
+        cache_dir.mkdir(parents=True)
+        size, items = clean_generic_xdg_caches(dry_run=True)
+        assert items >= 0
+
 
 def test_clean_orphaned_remnants(test_env):
-    with patch("pathlib.Path.home", return_value=test_env):
-        with patch("src.clean.apps.clean_path_by_age", return_value=(100, 1)):
-            config_dir = test_env / ".config/orphan_app"
-            config_dir.mkdir(parents=True)
-            with patch("shutil.which", return_value=None):
-                size, items = clean_orphaned_remnants(dry_run=True)
-                assert items >= 0
+    with patch("pathlib.Path.home", return_value=test_env), patch(
+        "src.clean.apps.clean_path_by_age", return_value=(100, 1)
+    ), patch("shutil.which", return_value=None):
+        config_dir = test_env / ".config/orphan_app"
+        config_dir.mkdir(parents=True)
+        size, items = clean_orphaned_remnants(dry_run=True)
+        assert items >= 0
 
 def test_clean_app_generic_dry_run(test_env):
     """Verify that dry_run calculates size but doesn't delete."""

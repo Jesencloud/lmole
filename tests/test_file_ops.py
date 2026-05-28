@@ -2,7 +2,16 @@ import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from src.core.file_ops import bytes_to_human, clean_path_by_age, get_size, parse_size_from_text, safe_remove, register_cleaned_path, CLEANED_PATHS, is_app_running
+from src.core.file_ops import (
+    CLEANED_PATHS,
+    bytes_to_human,
+    clean_path_by_age,
+    get_size,
+    is_app_running,
+    parse_size_from_text,
+    register_cleaned_path,
+    safe_remove,
+)
 from src.core.whitelist import is_protected
 
 
@@ -16,10 +25,10 @@ def test_register_cleaned_path():
 def test_is_app_running(mock_run):
     mock_run.return_value = MagicMock(returncode=0)
     assert is_app_running("test_app") is True
-    
+
     mock_run.return_value = MagicMock(returncode=1)
     assert is_app_running("test_app") is False
-    
+
     mock_run.side_effect = Exception("error")
     assert is_app_running("test_app") is False
 
@@ -69,16 +78,17 @@ def test_get_size_accurate(test_env):
 def test_get_size_error_handling():
     # Non-existent path
     assert get_size(Path("/tmp/this_should_never_exist_12345")) == 0
-    
-    # Mock OSError during stat AND scandir
-    with patch("pathlib.Path.is_file", return_value=True):
-        with patch("pathlib.Path.stat", side_effect=OSError):
-            assert get_size(Path("/tmp")) == 0
 
-    with patch("pathlib.Path.is_file", return_value=False):
-        with patch("pathlib.Path.is_symlink", return_value=False):
-            with patch("os.scandir", side_effect=OSError):
-                assert get_size(Path("/tmp")) == 0
+    # Mock OSError during stat AND scandir
+    with patch("pathlib.Path.is_file", return_value=True), patch(
+        "pathlib.Path.stat", side_effect=OSError
+    ):
+        assert get_size(Path("/tmp")) == 0
+
+    with patch("pathlib.Path.is_file", return_value=False), patch(
+        "pathlib.Path.is_symlink", return_value=False
+    ), patch("os.scandir", side_effect=OSError):
+        assert get_size(Path("/tmp")) == 0
 
 def test_bytes_to_human():
     # Note: bytes_to_human uses 1000 base
@@ -107,16 +117,15 @@ def test_safe_remove_edge_cases(test_env):
         success, msg = safe_remove(Path("/"))
         assert success is False
         assert "critical system path" in msg.lower()
-        
+
     # Test fallback to permanent delete if trash fails
     test_file = test_env / "trash_test.txt"
     test_file.write_text("dummy")
-    with patch("shutil.which", return_value=True): # Pretend trash is installed
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(returncode=1) # But it fails
-            success, msg = safe_remove(test_file, use_trash=True)
-            assert success is True
-            assert "Permanently deleted" in msg
+    with patch("shutil.which", return_value=True), patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=1)  # But it fails
+        success, msg = safe_remove(test_file, use_trash=True)
+        assert success is True
+        assert "Permanently deleted" in msg
 
     # Test Exception handling during removal
     with patch("pathlib.Path.unlink", side_effect=Exception("mocked error")):
@@ -136,22 +145,22 @@ def test_clean_path_by_age(test_env):
 
     current_time = time.time()
     old_time = current_time - (15 * 86400)
-    
+
     # We mock the entire stat object returned by iterdir()
     with patch("pathlib.Path.stat") as mock_stat:
         mock_stat.return_value.st_atime = old_time
         # Since we mock Path.stat universally, both files look old
-        
+
         # Dry run
         size, items = clean_path_by_age(cache_dir, days=10, dry_run=True)
         assert items == 2
-        
+
         # Real run
         with patch("pathlib.Path.unlink") as mock_unlink:
             size, items = clean_path_by_age(cache_dir, days=10, dry_run=False)
             assert items == 2
             assert mock_unlink.call_count == 2
-            
+
     # Test OSError handling
     with patch("pathlib.Path.iterdir", side_effect=OSError):
         size, items = clean_path_by_age(cache_dir, days=10)

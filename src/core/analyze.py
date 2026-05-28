@@ -1,4 +1,5 @@
 import json
+import os
 import shutil
 import subprocess
 import time
@@ -287,7 +288,16 @@ def run_deep_analysis(target_path: Path = None):
                 current_target = item["path"]
                 needs_scan = True
             elif item["path"].is_file():
-                subprocess.run(["xdg-open", str(item["path"])], capture_output=True)
+                p = item["path"]
+                archive_exts = {".zip", ".tar", ".gz", ".xz", ".bz2", ".7z", ".rar", ".deb", ".rpm", ".apk"}
+                is_archive = p.suffix.lower() in archive_exts
+                is_exec = os.access(p, os.X_OK)
+
+                if is_archive or is_exec:
+                    # Open parent directory instead for safety
+                    subprocess.run(["xdg-open", str(p.parent)], capture_output=True)
+                else:
+                    subprocess.run(["xdg-open", str(p)], capture_output=True)
         elif action == "SWITCH_FILES":
             _run_top_files_view(current_target or Path.home())
             needs_scan = True
