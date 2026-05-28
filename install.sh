@@ -30,18 +30,7 @@ else
 fi
 
 command -v python3 >/dev/null 2>&1 || { echo -e "  ${RED}✗ Error: python3 is required but not installed.${NC}"; exit 1; }
-if [ "$MINIMAL" = false ]; then echo -e "  ${GREEN}✓ python3 installed${NC}\n"; fi
-
-if [ "$MINIMAL" = false ]; then
-    echo -e "${CYAN}"
-    echo "  ████████  ██████  ██████   ██████ "
-    echo "     ██    ██    ██ ██   ██ ██    ██"
-    echo "     ██    ██    ██ ██████  ██    ██"
-    echo "     ██    ██    ██ ██      ██    ██"
-    echo "     ██     ██████  ██       ██████ "
-    echo -e "${NC}"
-    echo -e " ${CYAN}●${NC} ${BOLD}Topo${NC} ${GRAY}is digging deeper 🦡 🦡 🦡${NC}\n"
-fi
+if [ "$MINIMAL" = false ]; then echo -e "  ${GREEN}✓ python3 installed${NC}"; fi
 
 # 2. Define paths
 INSTALL_DIR="$HOME/.topo"
@@ -124,5 +113,14 @@ fi
 
 # Note: The ./topo link command already prints the success message.
 if [ "$MINIMAL" = false ]; then
-    echo -e "\n${GRAY}Type '${NC}topo${GRAY}' to start the interactive TUI, or '${NC}topo --help${GRAY}' to explore all commands.${NC}"
+    echo -e "${CYAN}"
+    echo "  ████████  ██████  ██████   ██████ "
+    echo "     ██    ██    ██ ██   ██ ██    ██"
+    echo "     ██    ██    ██ ██████  ██    ██"
+    echo "     ██    ██    ██ ██      ██    ██"
+    echo "     ██     ██████  ██       ██████ "
+    echo -e "${NC}"
+    echo -e " ${CYAN}●${NC} ${BOLD}Topo${NC} ${GRAY}is digging deeper 🦡 🦡 🦡${NC}\n"
+    
+    echo -e "${GRAY}Type '${NC}topo${GRAY}' to start the interactive TUI, or '${NC}topo --help${GRAY}' to explore all commands.${NC}"
 fi
