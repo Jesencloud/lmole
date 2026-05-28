@@ -130,7 +130,7 @@ class UninstallManager:
                                     if p.exists():
                                         install_time = int(p.stat().st_mtime)
                                         break
-                            except:
+                            except Exception:
                                 pass
 
                             id_lower = app_id.lower()
