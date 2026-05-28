@@ -74,8 +74,83 @@ DEFAULT_PURGE_SEARCH_PATHS = [
     str(Path.home() / "workspace"),
 ]
 
-# Config file for custom purge paths
+# Config files for custom and detected paths
 PURGE_CONFIG_FILE = Path.home() / ".config" / "topo" / "purge_paths"
+DETECTED_APPS_FILE = Path.home() / ".config" / "topo" / "detected_apps.json"
+
+# --- Application & Tool Cache Paths ---
+HOME = Path.home()
+
+# --- Application Definitions (High-Precision Cleanup) ---
+# Format: "Friendly Name": {"paths": [Path...], "procs": [process_names...]}
+APP_DEFS = {
+    "Discord": {
+        "paths": [HOME / ".config/discord/Cache", HOME / ".config/discord/Code Cache", HOME / ".config/discord/GPUCache"],
+        "procs": ["discord"]
+    },
+    "Telegram": {
+        "paths": [HOME / ".local/share/TelegramDesktop/tdata/user_data/Cache", HOME / ".local/share/TelegramDesktop/tdata/user_data/temp"],
+        "procs": ["Telegram"]
+    },
+    "Slack": {
+        "paths": [HOME / ".config/Slack/Cache", HOME / ".config/Slack/Service Worker/CacheStorage"],
+        "procs": ["slack"]
+    },
+    "Spotify": {
+        "paths": [HOME / ".cache/spotify/Data"],
+        "procs": ["spotify"]
+    },
+    "Google Chrome": {
+        "paths": [HOME / ".config/google-chrome/Default/Cache", HOME / ".config/google-chrome/Default/Code Cache"],
+        "procs": ["google-chrome"]
+    },
+    "Brave Browser": {
+        "paths": [HOME / ".config/BraveSoftware/Brave-Browser/Default/Cache"],
+        "procs": ["brave"]
+    },
+    "Microsoft Edge": {
+        "paths": [HOME / ".config/microsoft-edge/Default/Cache"],
+        "procs": ["microsoft-edge"]
+    },
+    "Zoom": {
+        "paths": [HOME / ".zoom/data"],
+        "procs": ["zoom"]
+    },
+    "Microsoft Teams": {
+        "paths": [HOME / ".config/Microsoft/Teams/Cache"],
+        "procs": ["teams"]
+    },
+    "VLC": {
+        "paths": [HOME / ".cache/vlc"],
+        "procs": ["vlc"]
+    },
+    "OBS Studio": {
+        "paths": [HOME / ".config/obs-studio/logs"],
+        "procs": ["obs"]
+    },
+    "WeChat": {
+        "paths": [
+            HOME / ".var/app/com.tencent.WeChat/cache",
+            HOME / ".var/app/com.tencent.WeChat/config/xwechat",
+            HOME / ".xwechat",
+            HOME / "Documents/WeChat Files"
+        ],
+        "procs": ["wechat", "wechat-uos", "wechat-universal", "WeChat.exe", "wechat.exe"]
+    }
+}
+
+# Dev tool caches
+DEV_CACHES = {
+    "npm": HOME / ".npm",
+    "pip": HOME / ".cache/pip",
+    "cargo": HOME / ".cargo/registry",
+    "go": HOME / ".cache/go-build",
+    "huggingface": HOME / ".cache/huggingface/hub",
+    "ollama": HOME / ".ollama/models/blobs",
+    "triton": HOME / ".triton/cache",
+    "torch": HOME / ".cache/torch/kernels",
+    "cuda": HOME / ".nv/ComputeCache",
+}
 
 # Minimum age in days before considering for cleanup
 MIN_AGE_DAYS = 7

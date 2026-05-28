@@ -14,10 +14,21 @@ Today's session focused on expanding Topo's diagnostic capabilities and achievin
 *   **Professional Silent Exit**: Removed all conversational "Goodbye!" messages. Topo now exits cleanly and silently to the shell prompt, matching the behavior of elite system utilities like `htop` or `vim`.
 *   **Intelligent Header Silence**: Implemented stdout redirection in the Clean runner. Category headers are now only printed if their sub-tasks actually reclaim space, ensuring a zero-clutter log.
 
-### 3. Architecture & Maintenance
-*   **Module Decoupling**: Successfully migrated all tool-specific caches (Npm, Pip, Cargo) from the `Analyze` module to the `Clean` module. This keeps the Disk Analyzer focused on structural discovery while centralizing automated maintenance.
-*   **Optimized Update Flow**: Implemented version-aware updates. `topo update` now checks the root `VERSION` file against GitHub and skips redundant script execution if the system is already current. Added a `--minimal` mode to `install.sh` for a cleaner upgrade experience.
-*   **Documentation Alignment**: Updated `README.md` with the new `topo_home.png` screenshot and refreshed all terminal mocks to reflect the latest ESC/Del keybindings and "Breakdown" summaries.
+### 3. Intelligent Cleanup Engine (Architecture 2.0)
+*   **Proactive App Detection**: Implemented a self-learning engine that automatically identifies newly installed software and registers their cache/config paths for high-precision cleaning.
+*   **Registry Self-Maintenance**: Introduced `detected_apps.json` with automatic "health checks" that prune entries for uninstalled apps once their remnants are cleared.
+*   **AI Developer Lifecycle**: Optimized `Hugging Face` and `Ollama` cleanup with age-aware logic (keeping "hot" models from the last 14 days). Added smart purging for `PyTorch`, `Triton`, and `CUDA` kernel caches.
+*   **Cross-Distro Enhancements**:
+    *   **Ubuntu**: Added specialized cleanup for `Snap` revisions and `Multipass` instances.
+    *   **Fedora/Generic**: Implemented full `Podman` system pruning and transfer cache removal.
+    *   **AppImage Support**: Developed a "Desktop Link Trace" method to identify and purge remnants of deleted AppImage files.
+*   **WeChat Ecosystem Support**: Added comprehensive multi-path, multi-process protection and cleanup for various Linux WeChat versions (Flatpak, Wine, UOS).
+*   **Self-Preservation Logic**: Implemented path-based protection to prevent Topo from recursively deleting its own configuration and registry files.
+
+### 4. Architecture & Maintenance
+*   **Logic Decoupling**: Centralized all cleaning constants and下沉 core file operations (process checks, registry) to `src/core/file_ops.py` to eliminate circular dependencies.
+*   **Three-Layer Filtering**: Established a robust cleaning hierarchy: High-Precision (Predefined) → Heuristic (Pattern-based) → Orphan Detection (Binary-cross-referencing).
+*   **Documentation Alignment**: Updated `README.md` with the new `topo_home.png` screenshot and refreshed all terminal mocks. Optimized ASCII banner alignment in `src/ui/tui.py`.
 
 ---
 

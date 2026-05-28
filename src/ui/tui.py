@@ -7,14 +7,13 @@ def show_banner():
     cmd_name = os.path.basename(sys.argv[0])
     if cmd_name in ("python3", "main.py", "topo"): cmd_name = "Topo"
 
-    banner = f"""{EARTH}
-  ████████  ██████  ██████   ██████ 
+    banner = f"""{EARTH}  ████████  ██████  ██████   ██████ 
      ██    ██    ██ ██   ██ ██    ██
      ██    ██    ██ ██████  ██    ██
-     ██    ██ 🦡 ██ ██      ██    ██
-     ██     ██████  ██       ██████ 
-{RESET}
- {CYAN}●{RESET} {BOLD}{cmd_name}{RESET} {GRAY}is digging deeper 🦡 🦡 🦡{RESET}"""
+     ██    ██    ██ ██      ██    ██
+     ██     ██████  ██       ██████ {RESET}
+
+  {CYAN}●{RESET} {BOLD}{cmd_name}{RESET} {GRAY}is digging deeper 🦡 🦡 🦡{RESET}"""
 
     print(banner)
     

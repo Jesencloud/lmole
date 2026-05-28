@@ -162,6 +162,8 @@ def run_deep_analysis():
                             "icon": "📁", "age_hint": get_age_hint(t['path'])
                         })
                 
+                from .constants import APP_CACHES, DEV_CACHES, YELLOW, CYAN
+                
                 # --- LINUX INSIGHTS: Detect hidden space killers ---
                 print(f"   🔍 Analyzing Linux Insights...", end="\r")
                 home = Path.home()
@@ -177,6 +179,16 @@ def run_deep_analysis():
                     {"name": "Flatpak Data", "path": home / ".local/share/flatpak"},
                     {"name": "Ollama Models", "path": home / ".ollama" / "models"},
                 ]
+                
+                # Dynamically add registered app and dev caches
+                for name, paths in APP_CACHES.items():
+                    if isinstance(paths, list):
+                        for p in paths: insights.append({"name": f"{name} Cache", "path": p})
+                    else:
+                        insights.append({"name": f"{name} Cache", "path": paths})
+                
+                for name, path in DEV_CACHES.items():
+                    insights.append({"name": f"{name.capitalize()} Cache", "path": path})
                 
                 for ins in insights:
                     p = ins['path']
