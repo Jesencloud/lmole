@@ -286,6 +286,8 @@ def run_deep_analysis(target_path: Path = None):
                 )
                 current_target = item["path"]
                 needs_scan = True
+            elif item["path"].is_file():
+                subprocess.run(["xdg-open", str(item["path"])], capture_output=True)
         elif action == "SWITCH_FILES":
             _run_top_files_view(current_target or Path.home())
             needs_scan = True
