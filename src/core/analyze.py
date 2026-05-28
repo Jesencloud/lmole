@@ -173,8 +173,6 @@ def run_deep_analysis():
                     {"name": "Pacman Cache", "path": Path("/var/cache/pacman/pkg")},
                     {"name": "Dnf Cache", "path": Path("/var/cache/dnf")},
                     {"name": "User Trash", "path": home / ".local/share/Trash"},
-                    {"name": "Pip Cache", "path": home / ".cache/pip"},
-                    {"name": "Npm Cache", "path": home / ".npm"},
                     {"name": "Snap Data", "path": home / "snap"},
                     {"name": "Flatpak Data", "path": home / ".local/share/flatpak"},
                     {"name": "Ollama Models", "path": home / ".ollama" / "models"},

@@ -86,6 +86,33 @@ def get_network_traffic():
     except:
         return "N/A", "N/A"
 
+def get_ip_info():
+    """Get local and public IP with country flag."""
+    local_ip = "N/A"
+    try:
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+    except: pass
+
+    public_info = ""
+    try:
+        import urllib.request
+        import json
+        # Fast, no-key API for public IP and country info
+        with urllib.request.urlopen("http://ip-api.com/json/", timeout=2.0) as response:
+            data = json.loads(response.read().decode())
+            if data.get('status') == 'success':
+                ip = data.get('query')
+                cc = data.get('countryCode', '')
+                # Format: [CN] 1.2.3.4
+                public_info = f"[{cc}] {ip}" if cc else ip
+    except: pass
+    
+    return local_ip, public_info
+
 def get_ssd_info():
     """Try to find SSD health info from /sys (limited availability without root/smartctl)."""
     try:
@@ -120,6 +147,32 @@ def get_cpu_temp():
     except:
         pass
     return "N/A"
+
+def get_fan_speed():
+    """Read fan speeds from /sys/class/hwmon."""
+    fans = []
+    try:
+        hwmon_root = Path("/sys/class/hwmon")
+        if hwmon_root.exists():
+            for hw_dir in hwmon_root.glob("hwmon*"):
+                for fan_input in hw_dir.glob("fan*_input"):
+                    try:
+                        with open(fan_input, "r") as f:
+                            rpm = f.read().strip()
+                            if rpm and rpm != "0":
+                                label_path = hw_dir / fan_input.name.replace("_input", "_label")
+                                name = ""
+                                if label_path.exists():
+                                    with open(label_path, "r") as lf: name = lf.read().strip()
+                                if not name:
+                                    name_path = hw_dir / "name"
+                                    if name_path.exists():
+                                        with open(name_path, "r") as nf: name = nf.read().strip()
+                                entry = f"{name}: {rpm} RPM" if name else f"{rpm} RPM"
+                                if entry not in fans: fans.append(entry)
+                    except: continue
+    except: pass
+    return ", ".join(fans) if fans else None
 
 def get_gpu_info():
     """Detect and get GPU status (NVIDIA/AMD/Intel)."""
@@ -212,9 +265,11 @@ def show_status():
     uptime = get_uptime()
     cpu_load = os.getloadavg()
     cpu_temp = get_cpu_temp()
+    fans = get_fan_speed()
     used_mem_str, total_mem_str, mem_percent = get_mem_info()
     battery = get_battery_info()
     rx, tx = get_network_traffic()
+    local_ip, public_ip = get_ip_info()
     gpu = get_gpu_info()
     top_procs = get_top_processes()
     
@@ -224,6 +279,8 @@ def show_status():
     print(f"⏱️  Uptime:       {uptime}")
     print(f"📊 CPU Load:     {cpu_load[0]:.2f}, {cpu_load[1]:.2f}, {cpu_load[2]:.2f} (1m, 5m, 15m)")
     print(f"🌡️  CPU Temp:     {cpu_temp}")
+    if fans:
+        print(f"⚙️  Fan Speed:    {fans}")
     
     # Visual Progress Bars
     mem_bar = draw_bar(mem_percent, width=20)
@@ -238,7 +295,9 @@ def show_status():
     if battery:
         print(f"🔋 Battery:      {battery}")
     
-    print(f"🌐 Network:      ↓ {rx} / ↑ {tx} (Total traffic)")
+    ip_str = f" | {local_ip}"
+    if public_ip: ip_str += f" | {public_ip}"
+    print(f"🌐 Network:      ↓ {rx} / ↑ {tx}{ip_str}")
     
     if top_procs:
         print(f"🚀 Top Processes: {', '.join(top_procs)}")

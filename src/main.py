@@ -18,10 +18,22 @@ from .manage.remove import run_remove
 from .manage.install import run_install_link
 from .manage.update import run_update
 from .ui.tui import main_menu
+from .ui.navigator import Navigator
 
 # Get version from root VERSION file
 VERSION_FILE = Path(__file__).parent.parent / "VERSION"
 TOPO_VERSION = VERSION_FILE.read_text().strip() if VERSION_FILE.exists() else "0.5.0"
+
+def wait_for_return():
+    print(f"\n\033[1;90mPress Enter to return, ESC to exit... \033[0m", end="", flush=True)
+    while True:
+        key = Navigator.get_key()
+        if key in (Navigator.ENTER, '\n'):
+            print()
+            return True
+        if key == Navigator.ESC:
+            print()
+            return False
 
 def main():
     parser = argparse.ArgumentParser(
@@ -104,7 +116,7 @@ Examples:
             choice = main_menu()
             if choice == "1":
                 run_clean(args.dry_run)
-                input("\n\033[1;90mPress Enter to return to Main Menu...\033[0m")
+                if not wait_for_return(): break
             elif choice == "2":
                 run_uninstall()
             elif choice == "3":
@@ -113,14 +125,13 @@ Examples:
                     optimize_system(args.dry_run)
                 else:
                     print("\033[1;33m⚠️  Optimization cancelled by user.\033[0m")
-                input("\nPress Enter to return to menu...")
+                if not wait_for_return(): break
             elif choice == "4":
                 run_deep_analysis()
             elif choice == "5":
                 show_status()
-                input("\nPress Enter to return to menu...")
+                if not wait_for_return(): break
             elif choice == "0" or choice.lower() == "q":
-                print("Goodbye!")
                 break
         return
 

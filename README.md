@@ -36,6 +36,9 @@ curl -fsSL https://raw.githubusercontent.com/Jesencloud/Topo/main/install.sh | b
 > Note: The script automatically detects your architecture (**x86_64** or **ARM64**) and provisions the optimized engine.
 
 **Run**
+<p align="center">
+  <img src="topo_home.png" alt="Topo - Clean Your Linux" width="800" />
+</p>
 
 ```bash
 topo                           # Start interactive TUI (Recommended)
@@ -65,19 +68,25 @@ It adopts a **Zero-Interruption** policy: administrative tasks are pre-authorize
 $ topo clean
 [EXECUTING] Starting system cleanup...
 
- 🔒 Authorizing system-level tasks...
+ 🔒 Authorizing system-level tasks (Ctrl+C to cancel)...
  ✓ Authorization successful.
 
-➤ User Data Cleanup
-➤ Deep App Cleanup
-  ◎ Brave Browser is running · cleanup skipped
+➤ System & Package Manager
+  ✓ Cleaned DNF cache (1.2 GB)
+  ✓ Vacuumed journal logs (218 MB)
+
 ➤ Developer Tools & AI Models
-  ✓ npm cache (9.6 KB) cleaned
+  ✓ Cargo cache (44.5 MB) cleaned
 
 ============================================================
 Cleanup complete
-Space freed: 9.6 KB | Items: 1 | Categories: 3
-Free space now: 482.8 GB
+
+Breakdown:
+  • Package Manager Cache        1.2 GB (1 items)
+  • Developer Artifacts         44.5 MB (1 items)
+
+Total space freed: 1.25 GB | Items: 2
+Free space now: 482.2 GB
 ============================================================
 ```
 
@@ -99,8 +108,7 @@ Select Application to Uninstall
   [9] clash-verge                                 182.0 MB | 0y ago
   [0] gnome-software                              128.0 MB | 0y ago
 --------------------------------------------------------------------------------
- Page 1/8 | Keys 1-0: Select | ↑↓: Move | Space: Select | Enter: Confirm
- S: Size | N: Name | T: Time | O: ↓ | Q: Exit
+ Page 1/8 | Space: Select | Enter: Confirm | S/N/T/O: Sort ↓ | ESC: Exit
 
  ☉ Selected Apps to Remove:
    • brave-browser
@@ -123,7 +131,7 @@ Select a category to explore:
     6. ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬    0.0%  |  📁 Applications                                       1.3 MB
 
 ------------------------------------------------------------------------------------------------------------
- ↑↓→ | Enter Explore | R Refresh | S Sort ↓ | Q Exit
+ ↑↓←→ | Num Select | Space Select | A All | ← Back | Enter Open | F Folder | L Largest | Del Delete | R Refresh | S Sort ↓ | ESC Exit
 ```
 
 ## Technical Advantages

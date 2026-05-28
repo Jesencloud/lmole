@@ -1,3 +1,26 @@
+# Daily Modification Report - 2026-05-28
+
+## Project: topo (Topo) - Hardware Insights & Navigation Polish
+
+Today's session focused on expanding Topo's diagnostic capabilities and achieving a professional, silent exit experience for high-efficiency users.
+
+### 1. Hardware & Network Diagnostics
+*   **Real-time Fan Monitoring**: Implemented `get_fan_speed()` to probe `/sys/class/hwmon`. Topo now displays active fan RPMs in the Status dashboard with "Intelligent Silence" (hiding the line on fanless systems).
+*   **Network IP Insights**: Integrated public and local IP detection. The dashboard now displays the user's geographic location via a 2-letter country code (e.g., `[CN]`) alongside their public IP address, using a lightweight API with aggressive timeouts for responsiveness.
+*   **Architecture Parity Verification**: Successfully conducted ARM64 cross-architecture testing using Podman and QEMU, confirming that all TUI and installation logic is 100% compatible with aarch64 environments.
+
+### 2. Interaction & TUI Refinement
+*   **Post-Task Exit Logic**: Replaced blocking `input()` calls with a non-blocking `wait_for_return()` helper. Users can now press **Enter** to return to the menu or **ESC** to exit the program instantly.
+*   **Professional Silent Exit**: Removed all conversational "Goodbye!" messages. Topo now exits cleanly and silently to the shell prompt, matching the behavior of elite system utilities like `htop` or `vim`.
+*   **Intelligent Header Silence**: Implemented stdout redirection in the Clean runner. Category headers are now only printed if their sub-tasks actually reclaim space, ensuring a zero-clutter log.
+
+### 3. Architecture & Maintenance
+*   **Module Decoupling**: Successfully migrated all tool-specific caches (Npm, Pip, Cargo) from the `Analyze` module to the `Clean` module. This keeps the Disk Analyzer focused on structural discovery while centralizing automated maintenance.
+*   **Optimized Update Flow**: Implemented version-aware updates. `topo update` now checks the root `VERSION` file against GitHub and skips redundant script execution if the system is already current. Added a `--minimal` mode to `install.sh` for a cleaner upgrade experience.
+*   **Documentation Alignment**: Updated `README.md` with the new `topo_home.png` screenshot and refreshed all terminal mocks to reflect the latest ESC/Del keybindings and "Breakdown" summaries.
+
+---
+
 # Daily Modification Report - 2026-05-27
 
 ## Project: topo (Topo) - Visual Identity & UX Perfection
@@ -14,12 +37,15 @@ Today's session focused on solidifying Topo's brand identity, achieving 100% par
 *   **Safety-First Exit Policy**: Removed the 'Q' key as a quit shortcut across all menus to prevent accidental character entry during system `sudo` prompts.
 *   **Fast Navigation**: Implemented **Horizontal Arrow Key (←→)** support for rapid page switching in the application uninstaller.
 *   **UI Compaction**: Consolidated multi-line footer hints into a single, high-density professional status line. Increased uninstaller list density to 15 items per page.
+*   **Focused Highlighting**: Added **Bold Magenta** highlighting for the focused item in the Analyze Disk view, significantly improving navigation tracking.
 
-### 3. Stability & Compatibility
-*   **Thread-Safe UI Logging**: Implemented a `threading.Lock` in the System Optimization module. This ensures that parallel maintenance tasks never corrupt the terminal alignment, resulting in a pixel-perfect status list.
+### 3. Engine & Logic Hardening
+*   **Intelligent Silence (Headers)**: Implemented a stdout buffering mechanism in the Clean runner. Category headers (e.g., "➤ System") are now intelligently hidden if no tasks within that category reclaim space, ensuring a zero-noise execution log.
+*   **Accurate Reporting**: Fixed a critical result aggregation bug. All sub-task bytes (especially Cargo and DNF caches) are now perfectly accumulated, resulting in a 100% accurate "Total space freed" summary with a per-category breakdown.
+*   **Cache Synchronization**: Implemented `ScanCache.clear()`. Performing a Clean, Purge, or Uninstall now automatically invalidates the Analyze Disk cache, ensuring that deleted items disappear instantly from the explorer.
+*   **Strict Authentication**: Hardened `ensure_sudo_session` to force an explicit password prompt for every cleanup session (via `sudo -k`), while maintaining a bypass for users with permanent `NOPASSWD` rules.
 *   **Ubuntu 24.04 Verification**: Conducted rigorous compatibility tests using Podman containers. Topo is now confirmed to be 100% functional on the latest Ubuntu LTS releases.
--   **Full Internationalization**: Translated every remaining Chinese comment and section header (including `.gitignore` and the `topo` launcher) into professional English.
-*   **Zero-Config PATH**: Upgraded `install.sh` to automatically detect and repair missing `$PATH` entries in `.bashrc` and `.zshrc`.
+*   **Full Internationalization**: Translated every remaining Chinese comment and section header (including `.gitignore` and the `topo` launcher) into professional English.
 
 ---
 
