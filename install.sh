@@ -111,8 +111,14 @@ else
     ./topo link
 fi
 
-# Note: The ./topo link command already prints the success message.
+# 6. Display final banner and version
 if [ "$MINIMAL" = false ]; then
+    # Extract version
+    TOPO_VER="unknown"
+    if [ -f "VERSION" ]; then
+        TOPO_VER=$(cat VERSION)
+    fi
+
     echo -e "${CYAN}"
     echo "  ████████  ██████  ██████   ██████ "
     echo "     ██    ██    ██ ██   ██ ██    ██"
@@ -120,7 +126,7 @@ if [ "$MINIMAL" = false ]; then
     echo "     ██    ██    ██ ██      ██    ██"
     echo "     ██     ██████  ██       ██████ "
     echo -e "${NC}"
-    echo -e " ${CYAN}●${NC} ${BOLD}Topo${NC} ${GRAY}is digging deeper 🦡 🦡 🦡${NC}\n"
+    echo -e " ${CYAN}●${NC} ${BOLD}Topo v${TOPO_VER}${NC} ${GRAY}is digging deeper 🦡 🦡 🦡${NC}\n"
     
     echo -e "${GRAY}Type '${NC}topo${GRAY}' to start the interactive TUI, or '${NC}topo --help${GRAY}' to explore all commands.${NC}"
 fi
