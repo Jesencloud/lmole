@@ -27,6 +27,7 @@ Today's session focused on expanding Topo's diagnostic capabilities and achievin
 *   **Self-Preservation Logic**: Implemented path-based protection to prevent Topo from recursively deleting its own configuration and registry files.
 
 ### 4. Architecture & Maintenance
+*   **Installation UX Polish**: Updated `install.sh` to suggest `topo --help` upon successful installation, encouraging users to explore the full range of system optimization commands.
 *   **Ruff Code Quality Integration**: Integrated the **Ruff** engine for ultra-fast linting and formatting. Resolved 100+ issues, including:
     *   Eliminated all **bare `except` blocks** for better error handling.
     *   Fixed **undefined name** and scope shadowing bugs in the Analysis and Uninstall modules.

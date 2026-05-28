@@ -124,5 +124,5 @@ fi
 
 # Note: The ./topo link command already prints the success message.
 if [ "$MINIMAL" = false ]; then
-    echo -e "\n${GRAY}Note: If you want to uninstall later, run '${NC}topo remove${GRAY}'${NC}"
+    echo -e "\n${GRAY}Type '${NC}topo --help${GRAY}' to explore all available commands.${NC}"
 fi
