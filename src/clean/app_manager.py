@@ -76,17 +76,21 @@ class UninstallManager:
         # 1. DNF (RPM) Scan
         if os_id in ("fedora", "rhel", "centos") and shutil.which("rpm"):
             try:
-                # Get all installed packages with their size
+                # Get all installed packages with their size and install time
                 res = subprocess.run(
-                    ["rpm", "-qa", "--queryformat", "%{NAME}\t%{SIZE}\n"],
+                    ["rpm", "-qa", "--queryformat", "%{NAME}\t%{SIZE}\t%{INSTALLTIME}\n"],
                     capture_output=True,
                     text=True,
                 )
                 if res.returncode == 0:
                     for line in res.stdout.splitlines():
                         parts = line.split("\t")
-                        if len(parts) >= 2:
-                            app_id, size_bytes = parts[0], int(parts[1])
+                        if len(parts) >= 3:
+                            app_id, size_bytes, install_time = (
+                                parts[0],
+                                int(parts[1]),
+                                int(parts[2]),
+                            )
                             apps.append(
                                 {
                                     "id": app_id,
@@ -94,7 +98,7 @@ class UninstallManager:
                                     "size_bytes": size_bytes,
                                     "size_str": bytes_to_human(size_bytes),
                                     "type": "DNF",
-                                    "install_time": 0,
+                                    "install_time": install_time,
                                 }
                             )
             except Exception:
@@ -104,7 +108,7 @@ class UninstallManager:
         if shutil.which("flatpak"):
             try:
                 res = subprocess.run(
-                    ["flatpak", "list", "--app", "--columns=name,application,size"],
+                    ["flatpak", "list", "--app", "--columns=name,application,size,installation"],
                     capture_output=True,
                     text=True,
                 )
@@ -113,6 +117,22 @@ class UninstallManager:
                         parts = line.split("\t")
                         if len(parts) >= 3:
                             app_name, app_id, size_str = parts[0], parts[1], parts[2]
+
+                            # Estimate install time from flatpak directory
+                            install_time = 0
+                            try:
+                                # Standard flatpak paths
+                                paths_to_check = [
+                                    Path(f"/var/lib/flatpak/app/{app_id}"),
+                                    Path.home() / f".local/share/flatpak/app/{app_id}",
+                                ]
+                                for p in paths_to_check:
+                                    if p.exists():
+                                        install_time = int(p.stat().st_mtime)
+                                        break
+                            except:
+                                pass
+
                             id_lower = app_id.lower()
                             if "org.freedesktop" in id_lower or "org.gnome.platform" in id_lower:
                                 continue
@@ -125,7 +145,7 @@ class UninstallManager:
                                     "size_bytes": size_bytes,
                                     "size_str": size_str,
                                     "type": "Flatpak",
-                                    "install_time": 0,
+                                    "install_time": install_time,
                                 }
                             )
             except Exception:

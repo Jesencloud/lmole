@@ -12,6 +12,7 @@ venv/
 
 # --- Rust (topo-core engine) ---
 topo-core/target/
+pyproject.toml
 
 # --- OS & Editors ---
 .DS_Store

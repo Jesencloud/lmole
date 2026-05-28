@@ -392,12 +392,16 @@ class UninstallSelector:
         if timestamp == 0:
             return "Unknown"
         diff = time.time() - timestamp
+        if diff < 3600:
+            return "Just now"
         if diff < 86400:
-            return "Today"
+            return f"{int(diff / 3600)}h ago"
         if diff < 172800:
             return "Yesterday"
-        if diff < 604800:
+        if diff < 2592000:
             return f"{int(diff / 86400)}d ago"
+        if diff < 31536000:
+            return f"{int(diff / 2592000)}mo ago"
         return f"{int(diff / 31536000)}y ago"
 
     def _sort_items(self):

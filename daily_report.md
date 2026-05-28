@@ -10,6 +10,11 @@ Today's session focused on expanding Topo's diagnostic capabilities and achievin
 *   **Architecture Parity Verification**: Successfully conducted ARM64 cross-architecture testing using Podman and QEMU, confirming that all TUI and installation logic is 100% compatible with aarch64 environments.
 
 ### 2. Interaction & TUI Refinement
+*   **Uninstaller Intelligence**: Fixed the issue where application installation time was shown as "Unknown".
+    *   **RPM/DNF Support**: Now retrieves exact installation timestamps using the `%{INSTALLTIME}` query format.
+    *   **Flatpak Support**: Estimates installation time by analyzing the modification time of application data directories.
+*   **Smart Sorting**: Reinforced the default sorting logic in the Uninstaller to ensure applications are always ranked by disk usage (largest to smallest) upon opening.
+*   **Time-Ago Precision**: Improved the human-readable time format in lists to include "hours", "months", and "years" for better historical context.
 *   **Unified Return/Exit Prompts**: Standardized all post-task prompts to "**Press Enter to return, ESC to exit...**" using a new `Navigator.wait_for_return()` helper. This ensures consistent, non-blocking single-key interaction across the entire application (Clean, Uninstall, Purge, Status).
 *   **Terminal History Preservation**: Implemented the **Alternate Screen Buffer** (`\033[?1049h`) for all interactive modes. Topo now runs in a temporary terminal layer, ensuring that your previous shell history and output are perfectly restored upon exit.
 *   **Professional Silent Exit**: Removed all conversational "Goodbye!" messages. Topo now exits cleanly and silently to the shell prompt.
