@@ -1,10 +1,10 @@
 use jwalk::WalkDir;
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
+use std::collections::{BinaryHeap, HashMap};
 use std::env;
 use std::path::PathBuf;
-use std::collections::HashMap;
 use std::time::Instant;
-use std::ffi::OsString;
 
 #[derive(Serialize, Deserialize)]
 struct ScanResult {
@@ -15,20 +15,39 @@ struct ScanResult {
     subdirs: HashMap<String, u64>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq)]
 struct FileInfo {
     path: String,
     size_bytes: u64,
 }
 
+// Implement custom ordering to make BinaryHeap a Min-Heap for size_bytes
+impl Ord for FileInfo {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // Reverse order: smaller size has higher priority (will be popped first)
+        other.size_bytes.cmp(&self.size_bytes)
+            .then_with(|| self.path.cmp(&other.path))
+    }
+}
+
+impl PartialOrd for FileInfo {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
-        eprintln!("Usage: lmo-core <path>");
+        eprintln!("Usage: topo-core <path>");
         std::process::exit(1);
     }
 
-    let root_path = PathBuf::from(&args[1]).canonicalize().unwrap_or_else(|_| PathBuf::from(&args[1]));
+    let raw_root = &args[1];
+    let root_path = PathBuf::from(raw_root)
+        .canonicalize()
+        .unwrap_or_else(|_| PathBuf::from(raw_root));
+
     if !root_path.exists() {
         eprintln!("Error: Path does not exist");
         std::process::exit(1);
@@ -37,15 +56,13 @@ fn main() {
     let start_time = Instant::now();
     let mut total_size = 0u64;
     let mut file_count = 0u64;
-    let mut all_files: Vec<FileInfo> = Vec::with_capacity(5000);
-    let mut subdir_sizes: HashMap<OsString, u64> = HashMap::new();
-
-    let root_components_count = root_path.components().count();
+    
+    // Use a Min-Heap to track the top 100 largest files efficiently
+    let mut top_files_heap: BinaryHeap<FileInfo> = BinaryHeap::with_capacity(101);
+    let mut subdir_sizes: HashMap<String, u64> = HashMap::new();
 
     // Safety list - skip virtual and system-reserved directories
-    let skip_list = [
-        "proc", "sys", "dev", "run", "mnt", "media", "lost+found"
-    ];
+    let skip_list = ["proc", "sys", "dev", "run", "mnt", "media", "lost+found"];
 
     let walker = WalkDir::new(&root_path)
         .skip_hidden(true)
@@ -55,55 +72,60 @@ fn main() {
                 if let Ok(entry) = child {
                     let name = entry.file_name.to_string_lossy();
                     !skip_list.iter().any(|&s| name == s)
-                } else { false }
+                } else {
+                    false
+                }
             });
         });
 
     for entry in walker.into_iter().filter_map(|e| e.ok()) {
+        let path = entry.path();
+        
         if entry.file_type.is_file() {
             let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
             if size > 0 {
                 total_size += size;
                 file_count += 1;
 
-                // Attribute size to immediate subdirectory
-                // Optimization: Use depth and parent_path to avoid full path allocation
-                let depth = entry.depth;
-                if depth == 1 {
-                    *subdir_sizes.entry(entry.file_name.clone()).or_insert(0) += size;
-                } else if depth > 1 {
-                    if let Some(first_comp) = entry.parent_path.components().nth(root_components_count) {
-                        *subdir_sizes.entry(first_comp.as_os_str().to_owned()).or_insert(0) += size;
+                // 1. Attribute size to top-level subdirectory
+                if let Ok(rel_path) = path.strip_prefix(&root_path) {
+                    if let Some(first_comp) = rel_path.components().next() {
+                        let subdir_name = first_comp.as_os_str().to_string_lossy().into_owned();
+                        *subdir_sizes.entry(subdir_name).or_insert(0) += size;
                     }
                 }
 
+                // 2. Track top 100 files (> 1MB)
                 if size > 1_000_000 {
-                    all_files.push(FileInfo {
-                        path: entry.path().to_string_lossy().into_owned(),
+                    let info = FileInfo {
+                        path: path.to_string_lossy().into_owned(),
                         size_bytes: size,
-                    });
+                    };
+                    
+                    top_files_heap.push(info);
+                    if top_files_heap.len() > 100 {
+                        top_files_heap.pop();
+                    }
                 }
             }
         }
     }
 
-    all_files.sort_by(|a, b| b.size_bytes.cmp(&a.size_bytes));
-    let top_files = all_files.into_iter().take(100).collect();
-
-    // Convert OsString keys to String for JSON serialization
-    let subdirs_final: HashMap<String, u64> = subdir_sizes
-        .into_iter()
-        .map(|(k, v)| (k.to_string_lossy().into_owned(), v))
-        .collect();
+    // Convert heap to sorted vector (Largest first)
+    let mut top_files: Vec<FileInfo> = top_files_heap.into_sorted_vec();
+    top_files.reverse();
 
     let result = ScanResult {
-        path: root_path.to_string_lossy().to_string(),
+        path: root_path.to_string_lossy().into_owned(),
         total_size_bytes: total_size,
         file_count,
         top_files,
-        subdirs: subdirs_final,
+        subdirs: subdir_sizes,
     };
 
-    println!("{}", serde_json::to_string(&result).unwrap());
-    eprintln!("Full scan completed in {:?}", start_time.elapsed());
+    if let Ok(json) = serde_json::to_string(&result) {
+        println!("{}", json);
+    }
+    
+    eprintln!("Scan of {:?} completed in {:?}", root_path, start_time.elapsed());
 }
