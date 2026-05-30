@@ -59,6 +59,25 @@ def get_size(path: str | Path) -> int:
     return total
 
 
+def get_size_fast(path: str | Path) -> int:
+    """Size of a directory using the Rust engine, falling back to get_size().
+
+    The engine now counts hidden files (skip_hidden=false), so its total matches
+    the pure-Python walk while being far faster on huge trees (node_modules, the
+    cargo registry, model caches). Files and engine-less environments fall back to
+    the exact Python implementation.
+    """
+    p = Path(path)
+    if p.is_dir():
+        # Lazy import breaks the analyze <-> file_ops import cycle.
+        from .analyze import get_rust_scan_data
+
+        data = get_rust_scan_data(p)
+        if data is not None:
+            return data.get("total_size_bytes", 0)
+    return get_size(p)
+
+
 def safe_remove(path: str | Path, use_trash: bool = True) -> tuple[bool, str]:
     """Safe removal with trash support and protection checks."""
     path = Path(path).expanduser().resolve()

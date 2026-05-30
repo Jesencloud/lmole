@@ -1,8 +1,10 @@
 import json
 import os
+import platform
 import shutil
 import subprocess
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -31,10 +33,29 @@ class ScanCache:
         cls._data = {}
 
 
-def get_rust_scan_data(path: Path) -> dict[str, Any]:
-    """Calls the topo-core-x86_64 binary and returns parsed JSON."""
-    binary = Path(__file__).parent / "bin" / "topo-core-x86_64"
-    if not binary.exists():
+def _get_core_binary() -> Path | None:
+    """Resolves the architecture-specific topo-core binary path.
+
+    install.sh keeps only the binary matching the host arch (e.g. it removes
+    topo-core-x86_64 on ARM64), so we must pick the name dynamically. Falls back
+    to any available engine binary for dev/single-arch checkouts.
+    """
+    bin_dir = Path(__file__).parent / "bin"
+    arch = platform.machine().lower()
+    suffix = "aarch64" if arch in ("aarch64", "arm64") else "x86_64"
+    preferred = bin_dir / f"topo-core-{suffix}"
+    if preferred.exists():
+        return preferred
+    for candidate in sorted(bin_dir.glob("topo-core-*")):
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def get_rust_scan_data(path: Path) -> dict[str, Any] | None:
+    """Calls the architecture-specific topo-core binary and returns parsed JSON."""
+    binary = _get_core_binary()
+    if binary is None:
         return None
 
     # Check cache first
@@ -51,6 +72,26 @@ def get_rust_scan_data(path: Path) -> dict[str, Any]:
     except Exception:
         pass
     return None
+
+
+def _parallel_scan_sizes(paths: list[Path]) -> dict[Path, int]:
+    """Scan multiple paths concurrently via the Rust engine.
+
+    Returns {path: total_size_bytes}. The work is subprocess/IO bound, so threads
+    give a near-linear speedup over scanning the root categories serially.
+    """
+    sizes: dict[Path, int] = {}
+    if not paths:
+        return sizes
+
+    def scan_one(p: Path) -> tuple[Path, int]:
+        data = get_rust_scan_data(p)
+        return p, (data.get("total_size_bytes", 0) if data else 0)
+
+    with ThreadPoolExecutor(max_workers=min(8, len(paths))) as executor:
+        for p, size in executor.map(scan_one, paths):
+            sizes[p] = size
+    return sizes
 
 
 def get_age_hint(path: Path) -> str:
@@ -131,7 +172,7 @@ def run_deep_analysis(target_path: Path = None):
 
             if current_target is None:
                 # Root View: Standard Categories
-                total_used = shutil.disk_usage("/").used
+                total_used = shutil.disk_usage("/").used or 1
                 targets = [
                     {"name": "Home", "path": Path.home(), "color": CYAN},
                     {
@@ -141,29 +182,8 @@ def run_deep_analysis(target_path: Path = None):
                     },
                     {"name": "System", "path": Path("/usr"), "color": BLUE},
                 ]
-                for t in targets:
-                    if t["path"].exists():
-                        if t["path"] == Path.home():
-                            size = total_scan_size
-                        elif str(t["path"]) == "/":
-                            size = total_used
-                        else:
-                            t_data = get_rust_scan_data(t["path"])
-                            size = t_data.get("total_size_bytes", 0) if t_data else 0
-                        results.append(
-                            {
-                                "name": t["name"],
-                                "path": t["path"],
-                                "size": size,
-                                "percent": (size / total_used) * 100,
-                                "color": t["color"],
-                                "icon": "📊" if str(t["path"]) == "/" else "📁",
-                                "age_hint": get_age_hint(t["path"]),
-                            }
-                        )
 
                 # --- LINUX INSIGHTS: Detect hidden space killers ---
-                print("   🔍 Analyzing Linux Insights...", end="\r")
                 home = Path.home()
                 insights = [
                     {"name": "Old Downloads (90d+)", "path": home / "Downloads", "is_smart": True},
@@ -177,19 +197,52 @@ def run_deep_analysis(target_path: Path = None):
                     {"name": "Ollama Models", "path": home / ".ollama" / "models"},
                 ]
 
+                # Collect every path that needs a Rust scan and run them concurrently.
+                # Home is already scanned (total_scan_size); smart views use a Python
+                # age-filter instead of a full scan.
+                print("   🔍 Analyzing Linux Insights...", end="\r")
+                rust_paths = [
+                    t["path"]
+                    for t in targets
+                    if t["path"].exists() and t["path"] != home and str(t["path"]) != "/"
+                ]
+                rust_paths += [
+                    ins["path"]
+                    for ins in insights
+                    if ins["path"].exists() and not ins.get("is_smart")
+                ]
+                scan_sizes = _parallel_scan_sizes(rust_paths)
+
+                for t in targets:
+                    if t["path"].exists():
+                        if t["path"] == home:
+                            size = total_scan_size
+                        elif str(t["path"]) == "/":
+                            size = total_used
+                        else:
+                            size = scan_sizes.get(t["path"], 0)
+                        results.append(
+                            {
+                                "name": t["name"],
+                                "path": t["path"],
+                                "size": size,
+                                "percent": (size / total_used) * 100,
+                                "color": t["color"],
+                                "icon": "📊" if str(t["path"]) == "/" else "📁",
+                                "age_hint": get_age_hint(t["path"]),
+                            }
+                        )
+
                 for ins in insights:
                     p = ins["path"]
                     if p.exists():
-                        size = 0
                         smart_items = []
-
                         if ins.get("is_smart"):
                             # For smart views, we pre-calculate filtered items
                             smart_items = get_old_items_info(p)
                             size = sum(item["size"] for item in smart_items)
                         else:
-                            ins_data = get_rust_scan_data(p)
-                            size = ins_data.get("total_size_bytes", 0) if ins_data else 0
+                            size = scan_sizes.get(p, 0)
 
                         if size > 10 * 1024 * 1024:  # Only show if > 10MB to keep Root clean
                             results.append(
@@ -212,8 +265,6 @@ def run_deep_analysis(target_path: Path = None):
                 total_path_size = total_scan_size or 1
                 subdir_map = data.get("subdirs", {})
                 for name, size in subdir_map.items():
-                    if name.startswith("."):
-                        continue
                     full_path = current_target / name
                     icon = "📁" if full_path.is_dir() else "📄"
                     results.append(

@@ -1,5 +1,6 @@
 import os
 import shutil
+from functools import partial
 
 from ..core import system
 from ..core.analyze import ScanCache
@@ -20,8 +21,8 @@ from .user import clean_user_data
 
 
 def run_clean(dry_run=False):
-    # 0. Proactive Detection (Auto-Discovery) - Run immediately to build registry
-    proactive_app_detection()
+    # 0. Proactive Detection (Auto-Discovery) - Run once and reuse downstream
+    detected_apps = proactive_app_detection()
 
     # 1. Prepare categories
     mode_label = f"{CYAN}[PREVIEW]{RESET}" if dry_run else f"{PURPLE}[EXECUTING]{RESET}"
@@ -57,7 +58,10 @@ def run_clean(dry_run=False):
             ],
         ),
         ("\033[1;95m➤ User Data Cleanup\033[0m", [("User Data & Trash", clean_user_data)]),
-        ("\033[1;95m➤ Deep App Cleanup\033[0m", [("Deep App Caches", clean_apps_deep)]),
+        (
+            "\033[1;95m➤ Deep App Cleanup\033[0m",
+            [("Deep App Caches", partial(clean_apps_deep, detected_apps=detected_apps))],
+        ),
         (
             "\033[1;95m➤ Developer Tools & AI Models\033[0m",
             [("Developer Artifacts", clean_developer_tools)],

@@ -7,7 +7,7 @@ from typing import Any
 from ..core.analyze import ScanCache
 from ..core.config import get_purge_paths
 from ..core.constants import MONOREPO_INDICATORS, PROJECT_INDICATORS, PURGE_TARGETS
-from ..core.file_ops import bytes_to_human, get_size, safe_remove
+from ..core.file_ops import bytes_to_human, get_size_fast, safe_remove
 from ..ui.navigator import Navigator, PaginatedSelector
 
 
@@ -90,7 +90,7 @@ class PurgeManager:
         results = []
 
         def get_item_info(p):
-            size = get_size(p)
+            size = get_size_fast(p)
             if size > 0:
                 return {
                     "project": p.parent.name,

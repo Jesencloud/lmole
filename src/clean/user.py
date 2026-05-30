@@ -1,5 +1,7 @@
+import os
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 from ..core.file_ops import bytes_to_human, get_size, safe_remove
@@ -49,32 +51,46 @@ def clean_trash(dry_run=False):
     return total_size, total_items, (1 if total_items > 0 else 0)
 
 
-def clean_system_temp(dry_run=False):
-    """Clean system temporary files."""
+def clean_system_temp(dry_run=False, min_age_days=3):
+    """Clean stale temporary files from /tmp and /var/tmp.
+
+    Only removes entries that are (a) owned by the current user and (b) untouched
+    (both mtime and atime) for at least ``min_age_days`` days. This avoids deleting
+    sockets, locks and scratch files that belong to running programs or other users.
+    """
     total_size = 0
     total_items = 0
+    uid = os.getuid()
+    cutoff = time.time() - (min_age_days * 86400)
 
     temp_paths = [Path("/tmp"), Path("/var/tmp")]
     for path in temp_paths:
-        if path.exists():
-            try:
-                for item in path.iterdir():
-                    # Avoid system files
-                    if item.name.startswith(".") or "systemd" in item.name:
-                        continue
-                    size = get_size(item)
-                    if dry_run:
-                        total_size += size
-                        total_items += 1
-                    else:
-                        if safe_remove(item, use_trash=False)[0]:
-                            total_size += size
-                            total_items += 1
-            except Exception:
-                continue
+        if not path.exists():
+            continue
+        try:
+            for item in path.iterdir():
+                # Avoid hidden files and systemd's private temp trees
+                if item.name.startswith(".") or "systemd" in item.name:
+                    continue
+                try:
+                    st = item.stat(follow_symlinks=False)
+                except OSError:
+                    continue
+                # Skip files owned by others, and anything still recently active
+                if st.st_uid != uid:
+                    continue
+                if st.st_mtime > cutoff or st.st_atime > cutoff:
+                    continue
+                size = get_size(item)
+                # Short-circuit: dry-run counts without touching the file
+                if dry_run or safe_remove(item, use_trash=False)[0]:
+                    total_size += size
+                    total_items += 1
+        except Exception:
+            continue
     if total_items > 0:
         status = "would be cleaned" if dry_run else "cleaned"
-        print(f"  \033[0;32m✓\033[0m Temp files ({bytes_to_human(total_size)}) {status}")
+        print(f"  \033[0;32m✓\033[0m Stale temp files ({bytes_to_human(total_size)}) {status}")
         return total_size, total_items, 1
     return 0, 0, 0
 

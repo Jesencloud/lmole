@@ -22,7 +22,7 @@ PURGE_TARGETS = {
     "bin",  # .NET build output (guarded)
     "obj",  # C# / Unity
     ".turbo",  # Turborepo cache
-    ".parcel-cache"  # Parcel bundler
+    ".parcel-cache",  # Parcel bundler
     ".dart_tool",  # Flutter/Dart build cache
     ".zig-cache",  # Zig
     "zig-out",  # Zig

@@ -16,8 +16,40 @@ from ..ui.navigator import Navigator, UninstallSelector
 
 
 class UninstallManager:
+    # Tokens too short or generic to safely substring-match against folder names.
+    # Matching these loosely would flag unrelated directories for deletion
+    # (e.g. "desktop" from "org.telegram.desktop", or "data"/"app").
+    _GENERIC_TOKENS = frozenset(
+        {
+            "app", "apps", "data", "core", "bin", "cache", "config", "share",
+            "gui", "lib", "tmp", "temp", "default", "common", "main", "client",
+            "desktop", "system", "settings", "local", "user",
+        }
+    )
+
     def __init__(self):
         self.apps: list[dict[str, Any]] = []
+
+    @staticmethod
+    def _name_matches(entry_lower: str, token: str) -> bool:
+        """Conservatively decide whether a folder name belongs to an app token.
+
+        Avoids deleting unrelated directories by rejecting short/generic tokens
+        and requiring a word boundary for prefix matches. Only distinctive
+        tokens (>= 5 chars) are allowed to match as a free substring.
+        """
+        token = token.strip().lower()
+        if not token or token in UninstallManager._GENERIC_TOKENS:
+            return False
+        if entry_lower == token:
+            return True
+        if len(token) < 3:
+            return False  # too short for any fuzzy matching
+        # Word-boundary prefix, e.g. "telegram" -> "telegram-desktop"
+        if any(entry_lower.startswith(token + sep) for sep in ("-", "_", ".", " ")):
+            return True
+        # Distinctive tokens may appear anywhere in the folder name
+        return len(token) >= 5 and token in entry_lower
 
     def _parse_size_to_bytes(self, size_str: str) -> int:
         if not size_str or size_str == "N/A":
@@ -228,7 +260,7 @@ class UninstallManager:
                     for entry in it:
                         entry_lower = entry.name.lower()
                         for t in targets:
-                            if t in entry_lower:
+                            if self._name_matches(entry_lower, t):
                                 p = Path(entry.path)
                                 if str(p) not in seen:
                                     paths.append(p)
@@ -252,7 +284,7 @@ class UninstallManager:
                         if entry.is_dir():
                             entry_lower = entry.name.lower()
                             if (
-                                app_name.lower() in entry_lower
+                                self._name_matches(entry_lower, app_name.lower())
                                 and str(entry.path) not in seen
                                 and home_path in Path(entry.path).parents
                             ):
@@ -318,6 +350,24 @@ def run_uninstall():
             return
 
         # --- PREVIEW LOOP ---
+        # Residue discovery and process checks touch the filesystem / spawn pgrep,
+        # so compute them once up front; the redraw loop below only formats them.
+        selected_apps = [apps[i] for i in selected_indices]
+        all_targets = []
+        total_estimated_size = 0
+        for app in selected_apps:
+            is_running = False
+            for proc in (app["id"], app["name"].lower()):
+                try:
+                    if subprocess.run(["pgrep", "-x", proc], capture_output=True).returncode == 0:
+                        is_running = True
+                        break
+                except Exception:
+                    pass
+            app_paths = manager.find_residue_paths(app["id"], app["name"], app["type"])
+            all_targets.append((app, app_paths, is_running))
+            total_estimated_size += app["size_bytes"]
+
         with Navigator.raw_mode() as fd:
             preview_done = False
             while not preview_done:
@@ -326,32 +376,11 @@ def run_uninstall():
                 buf.append(f"\033[1;35m➔\033[0m {BOLD}Uninstallation Preview{RESET}\033[K\n")
                 buf.append("-" * 70 + "\033[K\n")
 
-                selected_apps = [apps[i] for i in selected_indices]
-                all_targets = []
-                total_estimated_size = 0
-
-                for app in selected_apps:
-                    is_running = False
-                    # Check multiple process names
-                    procs_to_check = [app["id"], app["name"].lower()]
-                    for proc in procs_to_check:
-                        try:
-                            res = subprocess.run(["pgrep", "-x", proc], capture_output=True)
-                            if res.returncode == 0:
-                                is_running = True
-                                break
-                        except Exception:
-                            pass
-
+                for app, app_paths, is_running in all_targets:
                     running_tag = " \033[1;33m[Running]\033[0m" if is_running else ""
                     buf.append(
                         f"  \033[1;32m✓\033[0m {BOLD}{app['name']}{RESET}{running_tag}\033[K\n"
                     )
-                    total_estimated_size += app["size_bytes"]
-
-                    # Show paths with Mole-style icons
-                    app_paths = manager.find_residue_paths(app["id"], app["name"], app["type"])
-                    all_targets.append((app, app_paths))
                     for p in app_paths:
                         try:
                             rel_p = f"~/{p.relative_to(Path.home())}"
@@ -400,7 +429,7 @@ def run_uninstall():
                         removed_names = []
                         total_freed_all = 0
 
-                        for app, paths in all_targets:
+                        for app, paths, _ in all_targets:
                             manager.execute_uninstall(app, paths)
                             removed_names.append(app["name"])
                             total_freed_all += app["size_bytes"]

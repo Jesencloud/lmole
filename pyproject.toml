@@ -11,7 +11,8 @@ line-length = 100
 # UP: pyupgrade (升级旧语法)
 # B: flake8-bugbear (发现潜在bug)
 # SIM: flake8-simplify (简化代码)
-select = ["E", "F", "I", "UP", "B", "SIM", "W"]
+# ISC: flake8-implicit-str-concat (捕获缺逗号导致的隐式字符串拼接)
+select = ["E", "F", "I", "UP", "B", "SIM", "W", "ISC"]
 ignore = ["E501"]
 
 # 自动修复

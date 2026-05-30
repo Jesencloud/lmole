@@ -3,7 +3,7 @@ import subprocess
 from pathlib import Path
 
 from ..core.constants import DEV_CACHES
-from ..core.file_ops import bytes_to_human, clean_path_by_age, get_size, register_cleaned_path
+from ..core.file_ops import bytes_to_human, clean_path_by_age, get_size_fast, register_cleaned_path
 from ..core.system import run_command
 
 
@@ -13,7 +13,7 @@ def clean_tool_cache(description, command_args, cache_path=None, dry_run=False):
     if cache_path:
         path = Path(cache_path).expanduser()
         if path.exists():
-            total_size = get_size(path)
+            total_size = get_size_fast(path)
         register_cleaned_path(cache_path)
 
     if dry_run:
@@ -140,7 +140,7 @@ def clean_developer_tools(dry_run=False):
     cargo_path = DEV_CACHES["cargo"]
     if cargo_path.exists():
         register_cleaned_path(cargo_path)
-        size = get_size(cargo_path)
+        size = get_size_fast(cargo_path)
         if size > 1024:
             if dry_run:
                 print(f"  \033[0;32m✓\033[0m Cargo cache ({bytes_to_human(size)}) would be cleaned")

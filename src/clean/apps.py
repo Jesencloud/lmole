@@ -254,12 +254,17 @@ def clean_orphaned_remnants(dry_run=False):
     return total_size, total_items
 
 
-def clean_apps_deep(dry_run=False):
-    """Main entry point for deep application cleanup."""
+def clean_apps_deep(dry_run=False, detected_apps=None):
+    """Main entry point for deep application cleanup.
+
+    ``detected_apps`` may be passed by the caller to reuse an existing proactive
+    scan and avoid walking ~/.cache and ~/.config a second time in one pass.
+    """
     total_size = 0
     total_items = 0
     total_categories = 0
-    detected_apps = proactive_app_detection()
+    if detected_apps is None:
+        detected_apps = proactive_app_detection()
 
     # Combined loop for defined and detected apps
     all_apps = {**APP_DEFS, **detected_apps}

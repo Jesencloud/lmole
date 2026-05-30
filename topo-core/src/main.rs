@@ -65,7 +65,7 @@ fn main() {
     let skip_list = ["proc", "sys", "dev", "run", "mnt", "media", "lost+found"];
 
     let walker = WalkDir::new(&root_path)
-        .skip_hidden(true)
+        .skip_hidden(false)
         .follow_links(false)
         .process_read_dir(move |_depth, _path, _read_dir_state, children| {
             children.retain(|child| {

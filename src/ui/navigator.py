@@ -154,6 +154,18 @@ class Navigator:
                 return False
 
     @staticmethod
+    def read_number(fd, first_digit):
+        """Reads a quickly-typed multi-digit number starting with first_digit."""
+        num_str = first_digit
+        while select.select([fd], [], [], 0.4)[0]:
+            ch = os.read(fd, 1).decode("utf-8", "ignore")
+            if ch.isdigit():
+                num_str += ch
+            else:
+                break
+        return num_str
+
+    @staticmethod
     def hide_cursor():
         sys.stdout.write("\x1b[?25l")
         sys.stdout.flush()
@@ -162,6 +174,43 @@ class Navigator:
     def show_cursor():
         sys.stdout.write("\x1b[?25h")
         sys.stdout.flush()
+
+
+@contextmanager
+def _selector_session():
+    """Shared full-screen scaffolding: hide cursor, clear, raw mode, then restore."""
+    Navigator.hide_cursor()
+    sys.stdout.write("\033[2J")
+    try:
+        with Navigator.raw_mode() as fd:
+            yield fd
+    finally:
+        Navigator.show_cursor()
+
+
+class _PagedSelector:
+    """Mixin with page math and cursor movement shared by paginated selectors.
+
+    Subclasses provide ``self.items``, ``self.selected_index`` and
+    ``self.current_page``. ``page_size`` defaults to 15 and may be overridden
+    per-instance.
+    """
+
+    page_size = 15
+
+    def _total_pages(self):
+        return max(1, (len(self.items) + self.page_size - 1) // self.page_size)
+
+    def _move_cursor(self, delta):
+        n = len(self.items)
+        if n:
+            self.selected_index = (self.selected_index + delta) % n
+            self.current_page = self.selected_index // self.page_size
+
+    def _flip_page(self, delta):
+        if self.items:
+            self.current_page = (self.current_page + delta) % self._total_pages()
+            self.selected_index = self.current_page * self.page_size
 
 
 class InteractiveMenu:
@@ -195,30 +244,25 @@ class InteractiveMenu:
         sys.stdout.flush()
 
     def run(self):
-        Navigator.hide_cursor()
-        sys.stdout.write("\033[2J")
-        try:
-            with Navigator.raw_mode() as fd:
-                while True:
-                    self.render()
-                    key = Navigator.get_key(fd)
-                    if key in (Navigator.UP, "\x1bOA"):
-                        self.selected_index = (self.selected_index - 1) % len(self.options)
-                    elif key in (Navigator.DOWN, "\x1bOB"):
-                        self.selected_index = (self.selected_index + 1) % len(self.options)
-                    elif key in (Navigator.LEFT, Navigator.RIGHT, "\x1bOC", "\x1bOD"):
-                        continue
-                    elif key in Navigator.ENTER:
-                        return self.selected_index
-                    elif key == Navigator.ESC and len(key) == 1:
-                        return None
-                    elif key == "MOUSE_EVENT":
-                        continue
-        finally:
-            Navigator.show_cursor()
+        with _selector_session() as fd:
+            while True:
+                self.render()
+                key = Navigator.get_key(fd)
+                if key in (Navigator.UP, "\x1bOA"):
+                    self.selected_index = (self.selected_index - 1) % len(self.options)
+                elif key in (Navigator.DOWN, "\x1bOB"):
+                    self.selected_index = (self.selected_index + 1) % len(self.options)
+                elif key in (Navigator.LEFT, Navigator.RIGHT, "\x1bOC", "\x1bOD"):
+                    continue
+                elif key in Navigator.ENTER:
+                    return self.selected_index
+                elif key == Navigator.ESC and len(key) == 1:
+                    return None
+                elif key == "MOUSE_EVENT":
+                    continue
 
 
-class AnalyzeSelector:
+class AnalyzeSelector(_PagedSelector):
     def __init__(self, title, items, show_banner=None, can_select=True):
         self.title = title
         self.items = items
@@ -322,111 +366,81 @@ class AnalyzeSelector:
     def run(self):
         if not self.items:
             return None, None
-        Navigator.hide_cursor()
-        sys.stdout.write("\033[2J")
-        try:
-            with Navigator.raw_mode() as fd:
-                while True:
-                    self.render()
-                    key = Navigator.get_key(fd)
-                    total_len = len(self.items)
-                    if key in (Navigator.UP, "\x1bOA"):
-                        if total_len > 0:
-                            self.selected_index = (self.selected_index - 1) % total_len
-                            self.current_page = self.selected_index // self.page_size
-                    elif key in (Navigator.DOWN, "\x1bOB"):
-                        if total_len > 0:
-                            self.selected_index = (self.selected_index + 1) % total_len
-                            self.current_page = self.selected_index // self.page_size
-                    elif key == Navigator.PGUP:
-                        if total_len > 0:
-                            self.current_page = (self.current_page - 1) % (
-                                (total_len + self.page_size - 1) // self.page_size
-                            )
-                            self.selected_index = self.current_page * self.page_size
-                    elif key == Navigator.PGDN:
-                        if total_len > 0:
-                            self.current_page = (self.current_page + 1) % (
-                                (total_len + self.page_size - 1) // self.page_size
-                            )
-                            self.selected_index = self.current_page * self.page_size
-                    elif key in (Navigator.LEFT, "\x1bOD"):
-                        if self.current_page == 0:
-                            return "BACK", None
-                        total_pages = (total_len + self.page_size - 1) // self.page_size
-                        if total_pages > 1:
-                            self.current_page = (self.current_page - 1) % total_pages
-                            self.selected_index = self.current_page * self.page_size
-                        else:
-                            return "BACK", None
-                    elif key in (Navigator.RIGHT, "\x1bOC"):
-                        total_pages = (total_len + self.page_size - 1) // self.page_size
-                        if self.items[self.selected_index]["path"].is_dir():
-                            return "DRILL_DOWN", self.selected_index
-                        elif total_pages > 1:
-                            self.current_page = (self.current_page + 1) % total_pages
-                            self.selected_index = self.current_page * self.page_size
-                    elif key == Navigator.SPACE and self.can_select:
-                        if self.selected_index in self.selected_items:
-                            self.selected_items.remove(self.selected_index)
-                        else:
-                            self.selected_items.add(self.selected_index)
-                    elif key.isdigit() and self.can_select:
-                        num_str = key
-                        while True:
-                            if select.select([fd], [], [], 0.4)[0]:
-                                next_char = os.read(fd, 1).decode("utf-8", "ignore")
-                                if next_char.isdigit():
-                                    num_str += next_char
-                                else:
-                                    break
-                            else:
-                                break
-                        try:
-                            num = int(num_str)
-                            page_offset = 9 if num_str == "0" else num - 1
-                            idx = self.current_page * self.page_size + page_offset
-                            if idx < total_len:
-                                if idx in self.selected_items:
-                                    self.selected_items.remove(idx)
-                                else:
-                                    self.selected_items.add(idx)
-                        except Exception:
-                            pass
-                    elif key in Navigator.ENTER:
+        with _selector_session() as fd:
+            while True:
+                self.render()
+                key = Navigator.get_key(fd)
+                total_len = len(self.items)
+                if key in (Navigator.UP, "\x1bOA"):
+                    self._move_cursor(-1)
+                elif key in (Navigator.DOWN, "\x1bOB"):
+                    self._move_cursor(1)
+                elif key == Navigator.PGUP:
+                    self._flip_page(-1)
+                elif key == Navigator.PGDN:
+                    self._flip_page(1)
+                elif key in (Navigator.LEFT, "\x1bOD"):
+                    if self.current_page == 0:
+                        return "BACK", None
+                    if self._total_pages() > 1:
+                        self._flip_page(-1)
+                    else:
+                        return "BACK", None
+                elif key in (Navigator.RIGHT, "\x1bOC"):
+                    if self.items[self.selected_index]["path"].is_dir():
                         return "DRILL_DOWN", self.selected_index
-                    elif len(key) == 1 and key.lower() == "s":
-                        self.sort_reverse = not self.sort_reverse
-                        self._sort_items()
-                    elif len(key) == 1 and key.lower() == "r":
-                        return "REFRESH", None
-                    elif len(key) == 1 and key.lower() == "f":
-                        if self.can_select:
-                            if self.selected_items:
-                                return "OPEN_BATCH", list(self.selected_items)
-                            return "OPEN", self.selected_index
-                        else:
-                            return "DRILL_DOWN", self.selected_index
-                    elif len(key) == 1 and key.lower() == "a" and self.can_select:
-                        start = self.current_page * self.page_size
-                        end = min(start + self.page_size, total_len)
-                        page_indices = set(range(start, end))
-                        if page_indices.issubset(self.selected_items):
-                            self.selected_items -= page_indices
-                        else:
-                            self.selected_items |= page_indices
-                    elif key in (Navigator.DEL, "\x1b[3~") and self.can_select:
+                    elif self._total_pages() > 1:
+                        self._flip_page(1)
+                elif key == Navigator.SPACE and self.can_select:
+                    if self.selected_index in self.selected_items:
+                        self.selected_items.remove(self.selected_index)
+                    else:
+                        self.selected_items.add(self.selected_index)
+                elif key.isdigit() and self.can_select:
+                    num_str = Navigator.read_number(fd, key)
+                    try:
+                        num = int(num_str)
+                        page_offset = 9 if num_str == "0" else num - 1
+                        idx = self.current_page * self.page_size + page_offset
+                        if idx < total_len:
+                            if idx in self.selected_items:
+                                self.selected_items.remove(idx)
+                            else:
+                                self.selected_items.add(idx)
+                    except Exception:
+                        pass
+                elif key in Navigator.ENTER:
+                    return "DRILL_DOWN", self.selected_index
+                elif len(key) == 1 and key.lower() == "s":
+                    self.sort_reverse = not self.sort_reverse
+                    self._sort_items()
+                elif len(key) == 1 and key.lower() == "r":
+                    return "REFRESH", None
+                elif len(key) == 1 and key.lower() == "f":
+                    if self.can_select:
                         if self.selected_items:
-                            return "DELETE_BATCH", list(self.selected_items)
-                    elif key == Navigator.ESC and len(key) == 1:
-                        return "QUIT", None
-                    elif key == "MOUSE_EVENT":
-                        continue
-        finally:
-            Navigator.show_cursor()
+                            return "OPEN_BATCH", list(self.selected_items)
+                        return "OPEN", self.selected_index
+                    else:
+                        return "DRILL_DOWN", self.selected_index
+                elif len(key) == 1 and key.lower() == "a" and self.can_select:
+                    start = self.current_page * self.page_size
+                    end = min(start + self.page_size, total_len)
+                    page_indices = set(range(start, end))
+                    if page_indices.issubset(self.selected_items):
+                        self.selected_items -= page_indices
+                    else:
+                        self.selected_items |= page_indices
+                elif key in (Navigator.DEL, "\x1b[3~") and self.can_select:
+                    if self.selected_items:
+                        return "DELETE_BATCH", list(self.selected_items)
+                elif key == Navigator.ESC and len(key) == 1:
+                    return "QUIT", None
+                elif key == "MOUSE_EVENT":
+                    continue
 
 
-class PaginatedSelector:
+class PaginatedSelector(_PagedSelector):
     def __init__(self, title, items, page_size=10):
         self.title = title
         self.items = items

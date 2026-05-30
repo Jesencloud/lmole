@@ -69,7 +69,7 @@ def test_clean_developer_tools(mock_clean_tool, mock_which):
     mock_clean_tool.return_value = (100, 1)
 
     with (
-        patch("src.clean.dev.get_size", return_value=2048),
+        patch("src.clean.dev.get_size_fast", return_value=2048),
         patch("pathlib.Path.exists", return_value=True),
         patch("shutil.rmtree"),
     ):
