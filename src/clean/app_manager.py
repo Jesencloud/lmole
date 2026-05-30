@@ -322,7 +322,8 @@ def run_uninstall():
             preview_done = False
             while not preview_done:
                 buf = ["\033[H"]  # Go home
-                buf.append(f"\n \033[1;35m➔\033[0m {BOLD}Uninstallation Preview{RESET}\033[K\n")
+                # Use \033[K on every line, including the very first line and spacers
+                buf.append(f"\033[1;35m➔\033[0m {BOLD}Uninstallation Preview{RESET}\033[K\n")
                 buf.append("-" * 70 + "\033[K\n")
 
                 selected_apps = [apps[i] for i in selected_indices]
@@ -359,14 +360,15 @@ def run_uninstall():
                             buf.append(f"    \033[1;34m✓\033[0m {GRAY}{p}{RESET}\033[K\n")
 
                 buf.append("-" * 70 + "\033[K\n")
+                buf.append("\033[K\n")  # Explicit cleared spacer line
                 app_text = "application" if len(selected_apps) == 1 else "applications"
                 size_display = bytes_to_human(total_estimated_size)
                 prompt = (
-                    f"\n {MAGENTA}→{RESET} Remove {len(selected_apps)} {app_text}, {size_display} "
+                    f" {MAGENTA}→{RESET} Remove {len(selected_apps)} {app_text}, {size_display} "
                     f" {GREEN}Enter{RESET} confirm, {GRAY}ESC{RESET} cancel: "
                 )
                 buf.append(prompt + "\033[K")
-                buf.append("\033[J")  # Clear everything else below
+                buf.append("\033[J")  # Clear remaining old lines below
 
                 sys.stdout.write("".join(buf))
                 sys.stdout.flush()
