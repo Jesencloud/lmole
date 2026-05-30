@@ -1,16 +1,17 @@
 import os
-import select
 import shutil
 import subprocess
 import sys
+import termios
 import time
+import tty
 from pathlib import Path
 from typing import Any
 
+from ..core import system
 from ..core.analyze import ScanCache
 from ..core.constants import BOLD, GRAY, GREEN, MAGENTA, RED, RESET, YELLOW
 from ..core.file_ops import bytes_to_human, safe_remove
-from ..core.system import SUDO_CANCELLED, ensure_sudo_session, get_os_id, run_command
 from ..ui.navigator import Navigator, UninstallSelector
 
 
@@ -69,7 +70,7 @@ class UninstallManager:
     def run_full_scan(self) -> list[dict[str, Any]]:
         """Scans for user-facing applications (DNF and Flatpak)."""
         apps = []
-        os_id = get_os_id()
+        os_id = system.get_os_id()
 
         # 1. Pre-scan: Identify RPMs that provide desktop files (User Apps)
         user_app_packages = set()
@@ -283,9 +284,9 @@ class UninstallManager:
 
         # 2. Binary uninstall
         if app["type"] == "Flatpak":
-            run_command(["flatpak", "uninstall", "-y", app["id"]], capture=True)
+            system.run_command(["flatpak", "uninstall", "-y", app["id"]], capture=True)
         else:
-            run_command(["dnf", "remove", "-y", app["id"]], use_sudo=True, capture=True)
+            system.run_command(["dnf", "remove", "-y", app["id"]], use_sudo=True, capture=True)
 
         # 3. Path removal
         removed_details = []
@@ -316,103 +317,106 @@ def run_uninstall():
         if not selected_indices:
             return
 
-        # --- PREVIEW ---
-        os.system("clear")
-        print(f"\n \033[1;35m➔\033[0m {BOLD}Uninstallation Preview{RESET}")
-        print("-" * 70)
+        # --- PREVIEW LOOP ---
+        with Navigator.raw_mode() as fd:
+            preview_done = False
+            while not preview_done:
+                os.system("clear")
+                print(f"\n \033[1;35m➔\033[0m {BOLD}Uninstallation Preview{RESET}")
+                print("-" * 70)
 
-        selected_apps = [apps[i] for i in selected_indices]
-        all_targets = []
-        total_estimated_size = 0
+                selected_apps = [apps[i] for i in selected_indices]
+                all_targets = []
+                total_estimated_size = 0
 
-        for app in selected_apps:
-            is_running = False
-            # Check multiple process names
-            procs_to_check = [app["id"], app["name"].lower()]
-            for proc in procs_to_check:
-                try:
-                    res = subprocess.run(["pgrep", "-x", proc], capture_output=True)
-                    if res.returncode == 0:
-                        is_running = True
-                        break
-                except Exception:
-                    pass
+                for app in selected_apps:
+                    is_running = False
+                    # Check multiple process names
+                    procs_to_check = [app["id"], app["name"].lower()]
+                    for proc in procs_to_check:
+                        try:
+                            res = subprocess.run(["pgrep", "-x", proc], capture_output=True)
+                            if res.returncode == 0:
+                                is_running = True
+                                break
+                        except Exception:
+                            pass
 
-            running_tag = " \033[1;33m[Running]\033[0m" if is_running else ""
-            print(f"  \033[1;32m✓\033[0m {BOLD}{app['name']}{RESET}{running_tag}")
-            total_estimated_size += app["size_bytes"]
+                    running_tag = " \033[1;33m[Running]\033[0m" if is_running else ""
+                    print(f"  \033[1;32m✓\033[0m {BOLD}{app['name']}{RESET}{running_tag}")
+                    total_estimated_size += app["size_bytes"]
 
-            # Show paths with Mole-style icons
-            app_paths = manager.find_residue_paths(app["id"], app["name"], app["type"])
-            all_targets.append((app, app_paths))
-            for p in app_paths:
-                try:
-                    rel_p = f"~/{p.relative_to(Path.home())}"
-                    print(f"    \033[1;34m✓\033[0m {GRAY}{rel_p}{RESET}")
-                except Exception:
-                    print(f"    \033[1;34m✓\033[0m {GRAY}{p}{RESET}")
+                    # Show paths with Mole-style icons
+                    app_paths = manager.find_residue_paths(app["id"], app["name"], app["type"])
+                    all_targets.append((app, app_paths))
+                    for p in app_paths:
+                        try:
+                            rel_p = f"~/{p.relative_to(Path.home())}"
+                            print(f"    \033[1;34m✓\033[0m {GRAY}{rel_p}{RESET}")
+                        except Exception:
+                            print(f"    \033[1;34m✓\033[0m {GRAY}{p}{RESET}")
 
-        print("-" * 70)
-        app_text = "application" if len(selected_apps) == 1 else "applications"
-        size_display = bytes_to_human(total_estimated_size)
-        prompt = (
-            f"\n {MAGENTA}→{RESET} Remove {len(selected_apps)} {app_text}, {size_display} "
-            f" {GREEN}Enter{RESET} confirm, {GRAY}ESC{RESET} cancel: "
-        )
-        print(prompt, end="", flush=True)
+                print("-" * 70)
+                app_text = "application" if len(selected_apps) == 1 else "applications"
+                size_display = bytes_to_human(total_estimated_size)
+                prompt = (
+                    f"\n {MAGENTA}→{RESET} Remove {len(selected_apps)} {app_text}, {size_display} "
+                    f" {GREEN}Enter{RESET} confirm, {GRAY}ESC{RESET} cancel: "
+                )
+                print(prompt, end="", flush=True)
 
-        # Capture single key
-        import termios
+                # Capture key using standardized navigator with persistent raw mode
+                ch = Navigator.get_key(fd)
 
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            import tty
+                if ch in Navigator.ENTER:
+                    # Temporary exit raw mode for sudo prompt
+                    termios.tcsetattr(fd, termios.TCSADRAIN, termios.tcgetattr(sys.stdin))
+                    try:
+                        # Ensure sudo session (require password)
+                        print(f"\n {GRAY}🔒 Authorizing removal (Ctrl+C to cancel)...{RESET}")
 
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
-            if ch == "\x1b":  # ESC
-                ch = "ESC_SEQ" if select.select([sys.stdin], [], [], 0)[0] else "ESC"
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+                        if not system.ensure_sudo_session():
+                            if system.SUDO_CANCELLED:
+                                print(f"\n {YELLOW}⚠️  Uninstall cancelled by user.{RESET}")
+                            else:
+                                print(f"\n {RED}✗{RESET} Authorization failed. Uninstall cancelled.")
+                            if not Navigator.wait_for_return():
+                                preview_done = True
+                                break
+                            continue
 
-        if ch in ("\r", "\n"):
-            # Ensure sudo session (require password)
-            print(f"\n {GRAY}🔒 Authorizing removal (Ctrl+C to cancel)...{RESET}")
+                        # --- EXECUTION ---
+                        print(f"\n\n {GRAY}🚀 Processing...{RESET}")
+                        removed_names = []
+                        total_freed_all = 0
 
-            if not ensure_sudo_session():
-                if SUDO_CANCELLED:
-                    print(f"\n {YELLOW}⚠️  Uninstall cancelled by user.{RESET}")
+                        for app, paths in all_targets:
+                            manager.execute_uninstall(app, paths)
+                            removed_names.append(app["name"])
+                            total_freed_all += app["size_bytes"]
+
+                        # Final Summary
+                        if total_freed_all > 0:
+                            ScanCache.clear()
+                        print("=" * 70)
+                        print("\033[1;34mUninstall complete\033[0m")
+                        names_str = ", ".join(removed_names)
+                        msg = f"Removed {len(removed_names)} app(s), freed \033[1;32m"
+                        msg += f"{bytes_to_human(total_freed_all)}\033[0m: {names_str}"
+                        print(msg)
+                        print("=" * 70)
+
+                        # Standardized return/exit prompt
+                        if not Navigator.wait_for_return():
+                            return  # Exit uninstall completely
+                        preview_done = True
+                    finally:
+                        # Re-enter cbreak mode if we are continuing the loop
+                        if not preview_done:
+                            tty.setcbreak(fd)
+                elif ch == Navigator.ESC and len(ch) == 1:
+                    # Explicit ESC: Cancel and go back to list
+                    preview_done = True
                 else:
-                    print(f"\n {RED}✗{RESET} Authorization failed. Uninstall cancelled.")
-                if not Navigator.wait_for_return():
-                    break
-                continue
-
-            # --- EXECUTION ---
-            print(f"\n\n {GRAY}🚀 Processing...{RESET}")
-            removed_names = []
-            total_freed_all = 0
-
-            for app, paths in all_targets:
-                manager.execute_uninstall(app, paths)
-                removed_names.append(app["name"])
-                total_freed_all += app["size_bytes"]
-
-            # Final Summary (Pixel-perfect matching of the screenshot)
-            if total_freed_all > 0:
-                ScanCache.clear()
-            print("=" * 70)
-            print("\033[1;34mUninstall complete\033[0m")
-            names_str = ", ".join(removed_names)
-            msg = f"Removed {len(removed_names)} app(s), freed \033[1;32m"
-            msg += f"{bytes_to_human(total_freed_all)}\033[0m: {names_str}"
-            print(msg)
-            print("=" * 70)
-
-            # Standardized return/exit prompt
-            if not Navigator.wait_for_return():
-                break
-        else:
-            # ESC or other key
-            continue
+                    # MOUSE_EVENT, Arrows, or other keys: Stay on preview screen
+                    continue

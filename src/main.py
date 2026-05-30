@@ -7,9 +7,9 @@ from .clean.app_manager import run_uninstall
 from .clean.optimize import optimize_system
 from .clean.project import run_purge
 from .clean.runner import run_clean
+from .core import system
 from .core.analyze import run_deep_analysis
 from .core.status import show_status
-from .core.system import ensure_sudo_session, get_os_id, setup_passwordless_sudo
 from .core.whitelist import add_to_whitelist, remove_from_whitelist
 from .manage.install import run_install_link
 from .manage.remove import run_remove
@@ -93,7 +93,7 @@ Examples:
 
     # Authorization setup command
     if args.command == "authorize":
-        setup_passwordless_sudo()
+        system.setup_passwordless_sudo()
         return
 
     # Whitelist Management CLI
@@ -136,10 +136,13 @@ Examples:
                     print(
                         "\033[1;90m🔒 Authorizing optimization tasks (Ctrl+C to cancel)...\033[0m"
                     )
-                    if ensure_sudo_session():
+                    if system.ensure_sudo_session():
                         optimize_system(args.dry_run)
                     else:
-                        print("\033[1;33m⚠️  Optimization cancelled by user.\033[0m")
+                        if system.SUDO_CANCELLED:
+                            print("\033[1;33m⚠️  Optimization cancelled by user.\033[0m")
+                        else:
+                            print("\033[1;31m✗ Authorization failed. Optimization aborted.\033[0m")
                     if not Navigator.wait_for_return():
                         break
                 elif choice == "4":
@@ -158,7 +161,7 @@ Examples:
         args.command == "link" and args.silent
     ):
         print(f"\033[1;34mtopo {TOPO_VERSION} (Python Edition)\033[0m")
-        os_id = get_os_id()
+        os_id = system.get_os_id()
         print(f"System: {os_id}")
 
     if args.command in ("clean", "all"):
@@ -181,10 +184,13 @@ Examples:
 
     if args.command == "optimize":
         print("\033[1;90m🔒 Authorizing optimization tasks (Ctrl+C to cancel)...\033[0m")
-        if ensure_sudo_session():
+        if system.ensure_sudo_session():
             optimize_system(args.dry_run)
         else:
-            print("\033[1;33m⚠️  Optimization cancelled by user.\033[0m")
+            if system.SUDO_CANCELLED:
+                print("\033[1;33m⚠️  Optimization cancelled by user.\033[0m")
+            else:
+                print("\033[1;31m✗ Authorization failed. Optimization aborted.\033[0m")
 
     if args.command == "link":
         run_install_link(silent=args.silent)

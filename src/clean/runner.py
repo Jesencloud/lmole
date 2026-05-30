@@ -1,17 +1,18 @@
 import os
 import shutil
 
+from ..core import system
 from ..core.analyze import ScanCache
 from ..core.constants import (
     CYAN,
     GRAY,
     GREEN,
     PURPLE,
+    RED,
     RESET,
     YELLOW,
 )
 from ..core.file_ops import bytes_to_human
-from ..core.system import ensure_sudo_session
 from .apps import clean_apps_deep, proactive_app_detection
 from .dev import clean_developer_tools
 from .system import clean_journal, clean_package_manager
@@ -29,8 +30,11 @@ def run_clean(dry_run=False):
     # Pre-authorize sudo to avoid interrupting the progress list
     if not dry_run:
         print(f" {GRAY}🔒 Authorizing system-level tasks (Ctrl+C to cancel)...{RESET}")
-        if not ensure_sudo_session():
-            print(f" {YELLOW}⚠️  Cleanup cancelled by user.{RESET}\n")
+        if not system.ensure_sudo_session():
+            if system.SUDO_CANCELLED:
+                print(f" {YELLOW}⚠️  Cleanup cancelled by user.{RESET}\n")
+            else:
+                print(f" {RED}✗{RESET} Authorization failed. Cleanup aborted.\n")
             return
         else:
             print(f" {GREEN}✓{RESET} Authorization successful.\n")
