@@ -28,12 +28,12 @@ def is_app_running(process_name: str) -> bool:
 
 
 def bytes_to_human(n_bytes: int) -> str:
-    """Converts bytes to human readable format (Base-10)."""
-    for unit in ["B", "KB", "MB", "GB", "TB"]:
-        if n_bytes < 1000:
+    """Converts bytes to human readable format using binary units."""
+    for unit in ["B", "KiB", "MiB", "GiB", "TiB"]:
+        if n_bytes < 1024:
             return f"{n_bytes:.1f} {unit}" if unit != "B" else f"{int(n_bytes)} {unit}"
-        n_bytes /= 1000
-    return f"{n_bytes:.1f} PB"
+        n_bytes /= 1024
+    return f"{n_bytes:.1f} PiB"
 
 
 def get_size(path: str | Path) -> int:
@@ -142,15 +142,19 @@ def clean_path_by_age(path: str | Path, days: int, dry_run: bool = False) -> tup
     return total_size, items_count
 
 
-def parse_size_from_text(text: str) -> int:
-    """Parser for sizes in command output."""
-    if not text:
+def parse_size_to_bytes(text: str) -> int:
+    """Parse a human-readable size string as bytes using binary units."""
+    if not text or text == "N/A":
         return 0
-    match = re.search(r"([0-9.]+)\s*([KMGTB]?B|[KMG])", text, re.IGNORECASE)
+    match = re.search(r"([0-9.]+)\s*([KMGTPE]?I?B|[KMGTPE])", text, re.IGNORECASE)
     if match:
         val = float(match.group(1))
         unit = match.group(2).upper()
-        if "G" in unit:
+        if "P" in unit:
+            val *= 1024**5
+        elif "T" in unit:
+            val *= 1024**4
+        elif "G" in unit:
             val *= 1024**3
         elif "M" in unit:
             val *= 1024**2
@@ -158,3 +162,8 @@ def parse_size_from_text(text: str) -> int:
             val *= 1024
         return int(val)
     return 0
+
+
+def parse_size_from_text(text: str) -> int:
+    """Parser for sizes in command output."""
+    return parse_size_to_bytes(text)

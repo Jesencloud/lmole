@@ -9,10 +9,10 @@ MemAvailable:    8000000 kB
 """
     with patch("builtins.open", mock_open(read_data=mock_data)):
         used, total, percent = get_mem_info()
-        # used = (16000000 - 8000000) * 1024 = 8192000000 bytes = 8.2GB
-        # total = 16000000 * 1024 = 16384000000 bytes = 16.4GB
-        assert "8." in used
-        assert "16." in total
+        # used = (16000000 - 8000000) * 1024 = 8192000000 bytes = 7.6GiB
+        # total = 16000000 * 1024 = 16384000000 bytes = 15.3GiB
+        assert "7." in used
+        assert "15." in total
         assert percent == 50.0
 
 

@@ -73,8 +73,7 @@ DEFAULT_PURGE_SEARCH_PATHS = [
     str(Path.home() / "workspace"),
 ]
 
-# Config files for custom and detected paths
-PURGE_CONFIG_FILE = Path.home() / ".config" / "topo" / "purge_paths"
+# Config files for detected paths
 DETECTED_APPS_FILE = Path.home() / ".config" / "topo" / "detected_apps.json"
 
 # --- Application & Tool Cache Paths ---
@@ -145,9 +144,6 @@ DEV_CACHES = {
     "torch": HOME / ".cache/torch/kernels",
     "cuda": HOME / ".nv/ComputeCache",
 }
-
-# Minimum age in days before considering for cleanup
-MIN_AGE_DAYS = 7
 
 # --- UI / ANSI Colors ---
 BLUE = "\033[1;34m"

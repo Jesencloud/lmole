@@ -11,7 +11,7 @@ from typing import Any
 from ..core import system
 from ..core.analyze import ScanCache
 from ..core.constants import BOLD, GRAY, GREEN, MAGENTA, RED, RESET, YELLOW
-from ..core.file_ops import bytes_to_human, safe_remove
+from ..core.file_ops import bytes_to_human, parse_size_to_bytes, safe_remove
 from ..ui.navigator import Navigator, UninstallSelector
 
 
@@ -52,21 +52,7 @@ class UninstallManager:
         return len(token) >= 5 and token in entry_lower
 
     def _parse_size_to_bytes(self, size_str: str) -> int:
-        if not size_str or size_str == "N/A":
-            return 0
-        try:
-            val_str = "".join(c for c in size_str if c.isdigit() or c == ".")
-            val = float(val_str)
-            unit = size_str.upper()
-            if "G" in unit:
-                val *= 1024**3
-            elif "M" in unit:
-                val *= 1024**2
-            elif "K" in unit:
-                val *= 1024
-            return int(val)
-        except Exception:
-            return 0
+        return parse_size_to_bytes(size_str)
 
     def _get_app_localized_name(self, desktop_file: Path, name: str) -> str:
         """Tries to find Name[zh_CN] or Name in .desktop file."""

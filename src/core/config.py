@@ -2,9 +2,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-
-def get_config_dir() -> Path:
-    return Path.home() / ".config" / "topo"
+from .constants import DEFAULT_PURGE_SEARCH_PATHS
+from .paths import get_config_dir
 
 
 def get_config_file() -> Path:
@@ -12,15 +11,7 @@ def get_config_file() -> Path:
 
 
 DEFAULT_CONFIG = {
-    "purge_search_paths": [
-        str(Path.home() / "Documents"),
-        str(Path.home() / "Projects"),
-        str(Path.home() / "Code"),
-        str(Path.home() / "Development"),
-        str(Path.home() / "src"),
-        str(Path.home() / "repos"),
-        str(Path.home() / "workspace"),
-    ],
+    "purge_search_paths": DEFAULT_PURGE_SEARCH_PATHS,
     "use_trash": True,
     "min_age_days": 7,
     "theme_color": "cyan",

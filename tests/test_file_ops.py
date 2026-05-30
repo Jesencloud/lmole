@@ -9,6 +9,7 @@ from src.core.file_ops import (
     get_size,
     is_app_running,
     parse_size_from_text,
+    parse_size_to_bytes,
     register_cleaned_path,
     safe_remove,
 )
@@ -98,19 +99,18 @@ def test_get_size_error_handling():
 
 
 def test_bytes_to_human():
-    # Note: bytes_to_human uses 1000 base
     assert bytes_to_human(500) == "500 B"
-    assert bytes_to_human(1000) == "1.0 KB"
-    assert bytes_to_human(1500 * 1000) == "1.5 MB"
-    assert bytes_to_human(1.2 * 1000**3) == "1.2 GB"
-    assert bytes_to_human(5 * 1000**4) == "5.0 TB"
+    assert bytes_to_human(1024) == "1.0 KiB"
+    assert bytes_to_human(1536 * 1024) == "1.5 MiB"
+    assert bytes_to_human(int(1.2 * 1024**3)) == "1.2 GiB"
+    assert bytes_to_human(5 * 1024**4) == "5.0 TiB"
 
 
 def test_parse_size_from_text():
-    # parse_size_from_text uses 1024 base
     assert parse_size_from_text("freed 1.5 GB of space") == int(1.5 * 1024**3)
     assert parse_size_from_text("total 500 MB") == int(500 * 1024**2)
     assert parse_size_from_text("10 KB used") == int(10 * 1024)
+    assert parse_size_to_bytes("1.5 GiB") == int(1.5 * 1024**3)
     assert parse_size_from_text("no size here") == 0
     assert parse_size_from_text("") == 0
 

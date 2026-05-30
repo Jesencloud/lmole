@@ -35,6 +35,17 @@ Today's session focused on reaching the pinnacle of TUI performance, achieving a
 *   **100% Test Pass Rate**: Aligned the 57-unit test suite with the new modular `system` calls and persistent TUI modes. The project maintains rock-solid reliability in CI environments.
 *   **Ruff Elite Standard**: Maintained a zero-error state under strict Ruff linting, ensuring all new high-performance code adheres to modern Python 3.10+ standards.
 
+### 6. Refactoring & Consistency Cleanup
+*   **Selector Deduplication**: Further consolidated `navigator.py` by expanding the shared `_PagedSelector` and `_selector_session` patterns. Paginated selectors now reuse common cursor movement, page flipping, page selection, and raw terminal session handling instead of duplicating loop scaffolding.
+*   **Uninstaller Navigation Reuse**: Refactored `UninstallSelector` to inherit the shared paginated behavior and reuse `Navigator.read_number()` for multi-digit input, reducing repeated pagination and numeric selection logic.
+*   **Dead Code Removal**: Removed the unused `src/ui/menu.py` legacy `interactive_select` implementation, which had been fully replaced by the newer selector system.
+*   **Configuration Path Centralization**: Added `src/core/paths.py` as the single source for `get_config_dir()`, eliminating duplicate definitions in `config.py` and `whitelist.py`.
+*   **Default Purge Path Single Source**: Reused `DEFAULT_PURGE_SEARCH_PATHS` from `constants.py` inside `DEFAULT_CONFIG`, preventing drift between duplicated purge path defaults.
+*   **Size Parsing Consolidation**: Introduced a shared `parse_size_to_bytes()` helper in `file_ops.py` and routed the uninstaller size parser through it while keeping the existing compatibility method.
+*   **Binary Unit Alignment**: Updated `bytes_to_human()` to use 1024-based binary units (`KiB`, `MiB`, `GiB`, `TiB`) so display units match the codebase's threshold semantics.
+*   **Unused Constant Cleanup**: Removed unused `PURGE_CONFIG_FILE` and `MIN_AGE_DAYS` constants while preserving actively used UI constants such as `EARTH`.
+*   **Verification**: Confirmed the cleanup with `ruff check src tests` and the full pytest suite (`70 passed`).
+
 ---
 
 # Daily Modification Report - 2026-05-29
