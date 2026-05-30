@@ -442,14 +442,14 @@ class UninstallSelector:
             print(footer)
         if self.selected_ids:
             print("\n \033[1;35m☉ Selected Apps to Remove:\033[0m")
-            count = 0
-            for item in self.items:
-                if item["id"] in self.selected_ids:
-                    print(f"   \033[1;35m•\033[0m {item['name']}")
-                    count += 1
-                    if count >= 8:
-                        print(f"   ... and {len(self.selected_ids) - 8} more")
-                        break
+            selected_names = [i["name"] for i in self.items if i["id"] in self.selected_ids]
+            for i in range(0, len(selected_names), 2):
+                pair = selected_names[i : i + 2]
+                line = ""
+                for name in pair:
+                    name_padded = pad_and_truncate(name, 35)
+                    line += f"   \033[1;35m•\033[0m {name_padded}"
+                print(line)
 
     def run(self):
         if not self.items:
