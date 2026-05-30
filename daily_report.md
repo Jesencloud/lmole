@@ -23,7 +23,15 @@ Today's session focused on reaching the pinnacle of TUI performance, achieving a
 *   **Secure Authorization**: Integrated a mandatory `[sudo]` password prompt before uninstallation, featuring a clear `Ctrl+C` cancellation path and accurate user feedback ("Authorization failed" vs "Cancelled by user").
 *   **Intelligent Back-Navigation**: Refined the `LEFT` arrow key behavior to trigger a "Back" action only when on the first page of a list, preventing confusing wrap-around behavior.
 
-### 4. Architecture & Quality
+### 4. Disk Analyzer (Analyze Disk) Polish
+*   **Pixel-Perfect Alignment**: Tightened the layout between filenames and sizes by reducing padding and truncating long names to 30 characters, creating a more compact and readable view. 
+*   **Dynamic Separator Line**: Refactored the UI separator line to automatically match the exact length of the help prompt text below it, ensuring clean visual symmetry.
+*   **Vertical Alignment Fix**: Fixed a visual shift issue where navigating into folders with more than 9 items caused the percentage and size columns to misalign. Checkbox indices are now strictly formatted to a fixed width.
+*   **Accurate Percentage Calculation**: Resolved a critical bug where returning to the Root (/) view from a subdirectory caused disk percentages to exceed 100%. The `total_scan_size` is now correctly resynchronized with system disk usage upon returning.
+*   **Intuitive Navigation**: Restored the `Enter` key functionality to safely drill down into subdirectories or open files directly, matching user expectations.
+*   **Strict Deletion Safety**: Enforced a stricter policy for the `Del` key. It now strictly requires explicit item selection (via Space or numbers) before triggering the batch deletion workflow, preventing accidental deletion of merely hovered items.
+
+### 5. Architecture & Quality
 *   **100% Test Pass Rate**: Aligned the 57-unit test suite with the new modular `system` calls and persistent TUI modes. The project maintains rock-solid reliability in CI environments.
 *   **Ruff Elite Standard**: Maintained a zero-error state under strict Ruff linting, ensuring all new high-performance code adheres to modern Python 3.10+ standards.
 
