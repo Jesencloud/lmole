@@ -93,6 +93,7 @@ class Navigator:
 
     @staticmethod
     def get_key(fd=None):
+        """Reads a key or escape sequence. If fd is provided, assumes already in raw mode."""
         if fd is None:
             with Navigator.raw_mode() as raw_fd:
                 return Navigator._read_key(raw_fd)
@@ -181,14 +182,14 @@ class InteractiveMenu:
             buf.append(sys.stdout.getvalue())
             sys.stdout = old_stdout
 
-        buf.append(f"\n \033[1;35m{self.title}\033[0m\n")
-        buf.append("-" * 50 + "\n")
+        buf.append(f"\n \033[1;35m{self.title}\033[0m\033[K\n")
+        buf.append("-" * 50 + "\033[K\n")
         for i, (label, desc) in enumerate(self.options):
             prefix = " \033[1;36m>\033[0m " if i == self.selected_index else "   "
             style = "\033[1;36m" if i == self.selected_index else ""
-            buf.append(f"{prefix}{style}{label:<15}{RESET} {desc}\n")
-        buf.append("-" * 50 + "\n")
-        buf.append(f"{GRAY} ↑/↓: Navigate | Enter: Select | ESC: Quit{RESET}\n")
+            buf.append(f"{prefix}{style}{label:<15}{RESET} {desc}\033[K\n")
+        buf.append("-" * 50 + "\033[K\n")
+        buf.append(f"{GRAY} ↑/↓: Navigate | Enter: Select | ESC: Quit{RESET}\033[K\n")
         buf.append("\033[J")
         sys.stdout.write("".join(buf))
         sys.stdout.flush()
@@ -245,19 +246,20 @@ class AnalyzeSelector:
             buf.append(sys.stdout.getvalue())
             sys.stdout = old_stdout
 
-        buf.append(f"\n \033[1;35m{self.title}\033[0m\n")
+        buf.append(f"\n \033[1;35m{self.title}\033[0m\033[K\n")
         hint = (
             f"{GRAY}Select a location to explore (Type numbers or Space to select):{RESET}"
             if self.can_select
             else f"{GRAY}Select a category to explore:{RESET}"
         )
+        buf.append(f"{hint}\033[K\n\n")
+
         import shutil
 
         columns = shutil.get_terminal_size().columns
         available = columns - (2 + 5 + 8 + 3 + 2 + 5 + 12 + 5)
         bar_w = 20 if available > 40 else 10 if available > 20 else 0
         name_w = min(40, available - bar_w) if bar_w > 0 else max(15, available)
-        buf.append(f"{hint}\n\n")
 
         total_len = len(self.items)
         total_pages = (total_len + self.page_size - 1) // self.page_size
@@ -284,29 +286,29 @@ class AnalyzeSelector:
             icon = item.get("icon", "📁")
             age_str = f" {GRAY}{item.get('age_hint', '')}{RESET}" if item.get("age_hint") else ""
             buf.append(
-                f"{cursor} {checkbox_str}{bar_str}{item['percent']:>5.1f}%  |  {icon} {style}{name_padded}{RESET}     {WHITE}{bytes_to_human(item['size']):>12}{RESET}{age_str}\n"
+                f"{cursor} {checkbox_str}{bar_str}{item['percent']:>5.1f}%  |  {icon} {style}{name_padded}{RESET}     {WHITE}{bytes_to_human(item['size']):>12}{RESET}{age_str}\033[K\n"
             )
 
-        buf.append("\n" + "-" * (columns - 2) + "\n")
+        buf.append("\n" + "-" * (columns - 2) + "\033[K\n")
         order_icon = "↓" if self.sort_reverse else "↑"
         page_info = f" Page {self.current_page + 1}/{total_pages} |" if total_pages > 1 else ""
 
         if self.can_select:
             buf.append(
-                f"\033[1;90m {page_info} ↑↓←→ | Num/Space: Select | A: All | ←: Back | Enter: Open | F: Dir | Del | R | S: Sort {order_icon} | ESC\033[0m\n"
+                f"\033[1;90m {page_info} ↑↓←→ | Num/Space: Select | A: All | ←: Back | Enter: Open | F: Dir | Del | R | S: Sort {order_icon} | ESC\033[0m\033[K\n"
             )
         else:
             buf.append(
-                f"\033[1;90m {page_info} ↑↓: Nav | ←: Back | →: Open | F: Dir | R | S: Sort {order_icon} | ESC\033[0m\n"
+                f"\033[1;90m {page_info} ↑↓: Nav | ←: Back | →: Open | F: Dir | R | S: Sort {order_icon} | ESC\033[0m\033[K\n"
             )
 
         if self.selected_items:
-            buf.append("\n \033[1;35m☉ Selected Items to Remove:\033[0m\n")
+            buf.append("\n \033[1;35m☉ Selected Items to Remove:\033[0m\033[K\n")
             for i in sorted(list(self.selected_items)):
                 item = self.items[i]
-                buf.append(f"   \033[1;35m•\033[0m {item.get('icon', '📁')} {item['name']}\n")
+                buf.append(f"   \033[1;35m•\033[0m {item.get('icon', '📁')} {item['name']}\033[K\n")
 
-        buf.append("\033[J")
+        buf.append("\033[J")  # Clear remaining
         sys.stdout.write("".join(buf))
         sys.stdout.flush()
 
@@ -364,13 +366,19 @@ class AnalyzeSelector:
                             self.selected_items.add(self.selected_index)
                     elif key.isdigit() and self.can_select:
                         num_str = key
-                        while select.select([fd], [], [], 0.4)[0]:
-                            num_str += os.read(fd, 1).decode("utf-8", "ignore")
+                        while True:
+                            if select.select([fd], [], [], 0.4)[0]:
+                                next_char = os.read(fd, 1).decode("utf-8", "ignore")
+                                if next_char.isdigit():
+                                    num_str += next_char
+                                else:
+                                    break
+                            else:
+                                break
                         try:
                             num = int(num_str)
-                            idx = self.current_page * self.page_size + (
-                                9 if num_str == "0" else num - 1
-                            )
+                            page_offset = 9 if num_str == "0" else num - 1
+                            idx = self.current_page * self.page_size + page_offset
                             if idx < total_len:
                                 if idx in self.selected_items:
                                     self.selected_items.remove(idx)
@@ -419,8 +427,8 @@ class PaginatedSelector:
 
     def render(self):
         buf = ["\033[H"]
-        buf.append(f"\n \033[1;35m{self.title}\033[0m\n")
-        buf.append("-" * 60 + "\n")
+        buf.append(f"\n \033[1;35m{self.title}\033[0m\033[K\n")
+        buf.append("-" * 60 + "\033[K\n")
         start = self.current_page * self.page_size
         end = min(start + self.page_size, len(self.items))
         for i in range(start, end):
@@ -432,11 +440,11 @@ class PaginatedSelector:
             style = "\033[1;37m" if is_hover else ""
             name_padded = pad_and_truncate(item["project"], 20)
             size_str = bytes_to_human(item["size"])
-            buf.append(f"{cursor} {checkbox} {style}{name_padded}{RESET} | {size_str:>10}\n")
-        buf.append("-" * 60 + "\n")
+            buf.append(f"{cursor} {checkbox} {style}{name_padded}{RESET} | {size_str:>10}\033[K\n")
+        buf.append("-" * 60 + "\033[K\n")
         total_pages = (len(self.items) + self.page_size - 1) // self.page_size
         buf.append(
-            f" Page {self.current_page + 1}/{total_pages} | {GRAY}Space: Select | A: All | Enter: Confirm | S: Manage Paths | ESC: Exit{RESET}\n"
+            f" Page {self.current_page + 1}/{total_pages} | {GRAY}Space: Select | A: All | Enter: Confirm | S: Manage Paths | ESC: Exit{RESET}\033[K\n"
         )
         buf.append("\033[J")
         sys.stdout.write("".join(buf))
@@ -532,11 +540,11 @@ class UninstallSelector:
 
     def render(self):
         buf = ["\033[H"]
-        buf.append(f"\n \033[1;36m{self.title}\033[0m\n")
-        buf.append("-" * 80 + "\n")
+        buf.append(f"\n \033[1;36m{self.title}\033[0m\033[K\n")
+        buf.append("-" * 80 + "\033[K\n")
         total_len = len(self.items)
         if total_len == 0:
-            buf.append(f"\n   {GRAY}No applications found{RESET}\n")
+            buf.append(f"\n   {GRAY}No applications found{RESET}\033[K\n")
         else:
             total_pages = (total_len + self.page_size - 1) // self.page_size
             self.current_page = max(0, min(self.current_page, total_pages - 1))
@@ -553,23 +561,23 @@ class UninstallSelector:
                 name_style = "\033[1;35m" if is_selected else "\033[1;36m" if is_hover else ""
                 name_padded = pad_and_truncate(item["name"], 35)
                 buf.append(
-                    f"{cursor} {checkbox} {name_style}{name_padded}{RESET}     {item['size_str']:>12} | {self._format_time_ago(item['install_time'])}\n"
+                    f"{cursor} {checkbox} {name_style}{name_padded}{RESET}     {item['size_str']:>12} | {self._format_time_ago(item['install_time'])}\033[K\n"
                 )
-            buf.append("-" * 80 + "\n")
+            buf.append("-" * 80 + "\033[K\n")
             order_icon = "↓" if self.sort_reverse else "↑"
             buf.append(
-                f" Page {self.current_page + 1}/{total_pages} | {GRAY}Spc: Select | A: All | ←: Back | Enter: Confirm | S/N/T: Sort {order_icon} | ESC{RESET}\n"
+                f" Page {self.current_page + 1}/{total_pages} | {GRAY}Spc: Select | A: All | ←: Back | Enter: Confirm | S/N/T: Sort {order_icon} | ESC{RESET}\033[K\n"
             )
 
         if self.selected_ids:
-            buf.append("\n \033[1;35m☉ Selected Apps to Remove:\033[0m\n")
+            buf.append("\n \033[1;35m☉ Selected Apps to Remove:\033[0m\033[K\n")
             selected_names = [i["name"] for i in self.items if i["id"] in self.selected_ids]
             for i in range(0, len(selected_names), 2):
                 pair = selected_names[i : i + 2]
                 line = ""
                 for name in pair:
                     line += f"   \033[1;35m•\033[0m {pad_and_truncate(name, 35)}"
-                buf.append(line + "\n")
+                buf.append(line + "\033[K\n")
 
         buf.append("\033[J")
         sys.stdout.write("".join(buf))
@@ -632,9 +640,8 @@ class UninstallSelector:
                             num_str += os.read(fd, 1).decode("utf-8", "ignore")
                         try:
                             num = int(num_str)
-                            idx = self.current_page * self.page_size + (
-                                9 if num_str == "0" else num - 1
-                            )
+                            page_offset = 9 if num_str == "0" else num - 1
+                            idx = self.current_page * self.page_size + page_offset
                             if idx < total_len:
                                 item_id = self.items[idx]["id"]
                                 if item_id in self.selected_ids:
@@ -691,8 +698,8 @@ class TopFilesSelector:
         import shutil
 
         columns = shutil.get_terminal_size().columns
-        buf.append(f"\n \033[1;33m{self.title}\033[0m\n")
-        buf.append("-" * (columns - 2) + "\n")
+        buf.append(f"\n \033[1;33m{self.title}\033[0m\033[K\n")
+        buf.append("-" * (columns - 2) + "\033[K\n")
         viewport = 20
         start = max(0, self.selected_index - viewport // 2)
         end = min(len(self.items), start + viewport)
@@ -701,14 +708,14 @@ class TopFilesSelector:
             cursor = "\033[1;36m▶\033[0m" if i == self.selected_index else " "
             checkbox = "[\033[1;32m✓\033[0m]" if i in self.selected_items else "[ ]"
             buf.append(
-                f"{cursor} {checkbox} {WHITE}{bytes_to_human(item.get('size', item.get('size_bytes', 0))):>12}{RESET} | {str(item['path'])}\n"
+                f"{cursor} {checkbox} {WHITE}{bytes_to_human(item.get('size', item.get('size_bytes', 0))):>12}{RESET} | {str(item['path'])}\033[K\n"
             )
-        buf.append("-" * (columns - 2) + "\n")
-        buf.append(f"{GRAY} ↑/↓: Move | Space: Toggle | Enter: Delete | ESC: Back{RESET}\n")
+        buf.append("-" * (columns - 2) + "\033[K\n")
+        buf.append(f"{GRAY} ↑/↓: Move | Space: Toggle | Enter: Delete | ESC: Back{RESET}\033[K\n")
         if self.selected_items:
-            buf.append("\n \033[1;35m☉ Selected Large Files to Remove:\033[0m\n")
+            buf.append("\n \033[1;35m☉ Selected Large Files to Remove:\033[0m\033[K\n")
             for i in sorted(list(self.selected_items)):
-                buf.append(f"   \033[1;35m•\033[0m 📄 {Path(self.items[i]['path']).name}\n")
+                buf.append(f"   \033[1;35m•\033[0m 📄 {Path(self.items[i]['path']).name}\033[K\n")
         buf.append("\033[J")
         sys.stdout.write("".join(buf))
         sys.stdout.flush()
@@ -752,14 +759,14 @@ class ConfirmSelector:
 
     def render(self):
         buf = ["\033[H"]
-        buf.append(f"\n  {BOLD}{self.message}{RESET}\n")
+        buf.append(f"\n  {BOLD}{self.message}{RESET}\033[K\n")
         y = (
             "\033[1;37m\033[45m Yes \033[0m"
             if self.selected_index == 0
             else f"  {GRAY}Yes{RESET}  "
         )
         n = "\033[1;37m\033[45m No \033[0m" if self.selected_index == 1 else f"  {GRAY}No{RESET}  "
-        buf.append(f"  {y}   {n}\n\n")
+        buf.append(f"  {y}   {n}\033[K\n\n")
         buf.append("\033[J")
         sys.stdout.write("".join(buf))
         sys.stdout.flush()
@@ -806,8 +813,8 @@ class CleanSelector:
 
     def render(self):
         buf = ["\033[H"]
-        buf.append(f"\n \033[1;36m{self.title}\033[0m\n")
-        buf.append("-" * 65 + "\n")
+        buf.append(f"\n \033[1;36m{self.title}\033[0m\033[K\n")
+        buf.append("-" * 65 + "\033[K\n")
         total_freed = 0
         for i, item in enumerate(self.items):
             is_hover = i == self.selected_index
@@ -819,12 +826,12 @@ class CleanSelector:
             name_padded = pad_and_truncate(item["name"], 25)
             size_str = bytes_to_human(item["size"]) if item["size"] > 0 else "Scan Result"
             buf.append(
-                f"{cursor} {checkbox} \033[1;36m{name_padded}{RESET} |     {size_str:>12} | {GRAY}{item['desc']}{RESET}\n"
+                f"{cursor} {checkbox} \033[1;36m{name_padded}{RESET} |     {size_str:>12} | {GRAY}{item['desc']}{RESET}\033[K\n"
             )
-        buf.append("-" * 65 + "\n")
-        buf.append(f" Total Selected: \033[1;32m{bytes_to_human(total_freed)}\033[0m\n")
+        buf.append("-" * 65 + "\033[K\n")
+        buf.append(f" Total Selected: \033[1;32m{bytes_to_human(total_freed)}\033[0m\033[K\n")
         buf.append(
-            f"\n{GRAY} ↑/↓: Move | Space: Toggle | Enter: Clean Selected | ESC: Cancel{RESET}\n"
+            f"\n{GRAY} ↑/↓: Move | Space: Toggle | Enter: Clean Selected | ESC: Cancel{RESET}\033[K\n"
         )
         buf.append("\033[J")
         sys.stdout.write("".join(buf))
