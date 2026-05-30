@@ -274,8 +274,8 @@ class AnalyzeSelector:
             cursor = "\033[1;36m▶\033[0m" if is_hover else " "
             if self.can_select:
                 num = (i - start) + 1
-                inner = "\033[1;32m✓\033[0m" if is_selected else str(num)
-                checkbox_str = "[\033[1;32m✓\033[0m] " if is_selected else f"[{inner}] "
+                inner = "\033[1;32m✓ \033[0m" if is_selected else f"{num:<2}"
+                checkbox_str = f"[{inner}] "
             else:
                 checkbox_str = f" {i + 1:2}. "
 
