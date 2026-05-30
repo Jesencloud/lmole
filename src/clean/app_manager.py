@@ -321,9 +321,9 @@ def run_uninstall():
         with Navigator.raw_mode() as fd:
             preview_done = False
             while not preview_done:
-                os.system("clear")
-                print(f"\n \033[1;35m➔\033[0m {BOLD}Uninstallation Preview{RESET}")
-                print("-" * 70)
+                buf = ["\033[H"]  # Go home
+                buf.append(f"\n \033[1;35m➔\033[0m {BOLD}Uninstallation Preview{RESET}\n")
+                buf.append("-" * 70 + "\n")
 
                 selected_apps = [apps[i] for i in selected_indices]
                 all_targets = []
@@ -343,7 +343,7 @@ def run_uninstall():
                             pass
 
                     running_tag = " \033[1;33m[Running]\033[0m" if is_running else ""
-                    print(f"  \033[1;32m✓\033[0m {BOLD}{app['name']}{RESET}{running_tag}")
+                    buf.append(f"  \033[1;32m✓\033[0m {BOLD}{app['name']}{RESET}{running_tag}\n")
                     total_estimated_size += app["size_bytes"]
 
                     # Show paths with Mole-style icons
@@ -352,18 +352,22 @@ def run_uninstall():
                     for p in app_paths:
                         try:
                             rel_p = f"~/{p.relative_to(Path.home())}"
-                            print(f"    \033[1;34m✓\033[0m {GRAY}{rel_p}{RESET}")
+                            buf.append(f"    \033[1;34m✓\033[0m {GRAY}{rel_p}{RESET}\n")
                         except Exception:
-                            print(f"    \033[1;34m✓\033[0m {GRAY}{p}{RESET}")
+                            buf.append(f"    \033[1;34m✓\033[0m {GRAY}{p}{RESET}\n")
 
-                print("-" * 70)
+                buf.append("-" * 70 + "\n")
                 app_text = "application" if len(selected_apps) == 1 else "applications"
                 size_display = bytes_to_human(total_estimated_size)
                 prompt = (
                     f"\n {MAGENTA}→{RESET} Remove {len(selected_apps)} {app_text}, {size_display} "
                     f" {GREEN}Enter{RESET} confirm, {GRAY}ESC{RESET} cancel: "
                 )
-                print(prompt, end="", flush=True)
+                buf.append(prompt)
+                buf.append("\033[J")  # Clear any trails below
+
+                sys.stdout.write("".join(buf))
+                sys.stdout.flush()
 
                 # Capture key using standardized navigator with persistent raw mode
                 ch = Navigator.get_key(fd)
