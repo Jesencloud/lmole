@@ -1,9 +1,26 @@
 import os
 import subprocess
 import sys
+from dataclasses import dataclass
+from typing import Any
 
 # Global flag to track if user explicitly cancelled sudo auth
 SUDO_CANCELLED = False
+DEFAULT_COMMAND_TIMEOUT = 300
+
+
+@dataclass
+class CommandResult:
+    args: list[str]
+    returncode: int
+    stdout: str = ""
+    stderr: str = ""
+    error: str = ""
+    timed_out: bool = False
+
+    @property
+    def ok(self) -> bool:
+        return self.returncode == 0 and not self.timed_out and not self.error
 
 
 def get_os_id():
@@ -22,14 +39,42 @@ def get_invoking_user():
     return os.environ.get("SUDO_USER") or os.environ.get("USER") or "unknown"
 
 
-def run_command(args, use_sudo=False, capture=True):
+def run_command(args: list[str], use_sudo=False, capture=True, timeout=DEFAULT_COMMAND_TIMEOUT):
     cmd = (["sudo", "-n"] + args if SUDO_CANCELLED else ["sudo"] + args) if use_sudo else args
 
     try:
-        result = subprocess.run(cmd, capture_output=capture, text=True, check=False)
-        return result
-    except Exception:
-        return None
+        result = subprocess.run(
+            cmd,
+            capture_output=capture,
+            text=True,
+            check=False,
+            timeout=timeout,
+        )
+        return CommandResult(
+            args=cmd,
+            returncode=result.returncode,
+            stdout=result.stdout or "",
+            stderr=result.stderr or "",
+        )
+    except subprocess.TimeoutExpired as e:
+        return CommandResult(
+            args=cmd,
+            returncode=124,
+            stdout=_decode_output(e.stdout),
+            stderr=_decode_output(e.stderr),
+            error=f"Command timed out after {timeout}s",
+            timed_out=True,
+        )
+    except (OSError, subprocess.SubprocessError) as e:
+        return CommandResult(args=cmd, returncode=127, error=str(e))
+
+
+def _decode_output(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", "replace")
+    return str(value)
 
 
 # ANSI Colors for Setup Output
@@ -40,7 +85,7 @@ RESET = "\033[0m"
 def has_sudo():
     """Check if current user has active sudo session"""
     res = run_command(["-n", "true"], use_sudo=True)
-    return res and res.returncode == 0
+    return res.ok
 
 
 def ensure_sudo_session():
@@ -50,15 +95,15 @@ def ensure_sudo_session():
 
     try:
         # 1. Invalidate the current user's cached credentials (force prompt)
-        subprocess.run(["sudo", "-k"], capture_output=True)
+        run_command(["-k"], use_sudo=True, capture=True, timeout=10)
 
         # 2. Check if a permanent NOPASSWD rule exists first
-        if run_command(["-n", "true"], use_sudo=True, capture=True).returncode == 0:
+        if run_command(["-n", "true"], use_sudo=True, capture=True, timeout=10).ok:
             return True
 
         # 3. sudo -v (validate) asks for the password and updates the timestamp
-        res = subprocess.run(["sudo", "-v"], capture_output=False)
-        return res.returncode == 0
+        res = run_command(["-v"], use_sudo=True, capture=False, timeout=None)
+        return res.ok
     except KeyboardInterrupt:
         print()  # Add a newline after ^C
         SUDO_CANCELLED = True

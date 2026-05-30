@@ -22,7 +22,7 @@ def test_clean_trash_dry_run(test_env):
 
 
 @patch("shutil.which")
-@patch("subprocess.run")
+@patch("src.clean.user.run_command")
 def test_clean_trash_execution_gio(mock_run, mock_which, test_env):
     """Verify trash cleanup using 'gio' command."""
     mock_which.side_effect = lambda x: "/usr/bin/gio" if x == "gio" else None
@@ -35,7 +35,7 @@ def test_clean_trash_execution_gio(mock_run, mock_which, test_env):
     with patch("pathlib.Path.home", return_value=test_env):
         clean_trash(dry_run=False)
 
-    mock_run.assert_called_with(["gio", "trash", "--empty"], capture_output=True)
+    mock_run.assert_called_with(["gio", "trash", "--empty"], capture=True, timeout=30)
 
 
 def test_clean_system_temp_only_removes_stale_user_owned_items(test_env):

@@ -1,10 +1,10 @@
 import os
 import re
 import shutil
-import subprocess
 import time
 from pathlib import Path
 
+from .system import run_command
 from .whitelist import is_protected
 
 # Global registry to track handled paths across modules
@@ -20,11 +20,7 @@ def register_cleaned_path(path: str | Path | None):
 
 def is_app_running(process_name: str) -> bool:
     """Check if an application is currently running."""
-    try:
-        res = subprocess.run(["pgrep", "-x", process_name], capture_output=True)
-        return res.returncode == 0
-    except Exception:
-        return False
+    return run_command(["pgrep", "-x", process_name], capture=True, timeout=5).ok
 
 
 def bytes_to_human(n_bytes: int) -> str:
@@ -99,12 +95,12 @@ def safe_remove(path: str | Path, use_trash: bool = True) -> tuple[bool, str]:
         if use_trash:
             if (
                 shutil.which("gio")
-                and subprocess.run(["gio", "trash", str(raw_path)], capture_output=True).returncode == 0
+                and run_command(["gio", "trash", str(raw_path)], capture=True, timeout=30).ok
             ):
                 return True, "Moved to trash (gio)"
             if (
                 shutil.which("trash-put")
-                and subprocess.run(["trash-put", str(raw_path)], capture_output=True).returncode == 0
+                and run_command(["trash-put", str(raw_path)], capture=True, timeout=30).ok
             ):
                 return True, "Moved to trash (trash-cli)"
 

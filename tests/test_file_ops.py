@@ -31,17 +31,17 @@ def test_is_app_running(mock_run):
     mock_run.return_value = MagicMock(returncode=1)
     assert is_app_running("test_app") is False
 
-    mock_run.side_effect = Exception("error")
+    mock_run.side_effect = OSError("error")
     assert is_app_running("test_app") is False
 
 
-def test_whitelist_protection():
+def test_whitelist_protection(test_env):
     """Verify that critical system paths are protected."""
     assert is_protected("/") is True
     assert is_protected("/usr/bin") is True
     assert is_protected("/etc/shadow") is True
     assert is_protected("/boot") is True
-    assert is_protected("/home/user/my_docs") is False
+    assert is_protected(test_env / "my_docs") is False
 
 
 def test_safe_remove_prevents_system_deletion(test_env):

@@ -1,12 +1,12 @@
 import os
 import shutil
-import subprocess
 from datetime import datetime
 from pathlib import Path
 
 from ..ui.navigator import draw_bar
 from .config import load_config
 from .file_ops import bytes_to_human
+from .system import run_command
 
 
 def get_mem_info():
@@ -203,16 +203,16 @@ def get_gpu_info():
     # 1. Check NVIDIA (Most common for AI)
     if shutil.which("nvidia-smi"):
         try:
-            res = subprocess.run(
+            res = run_command(
                 [
                     "nvidia-smi",
                     "--query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu",
                     "--format=csv,noheader,nounits",
                 ],
-                capture_output=True,
-                text=True,
+                capture=True,
+                timeout=10,
             )
-            if res.returncode == 0:
+            if res.ok:
                 util, used, total, temp = res.stdout.strip().split(", ")
                 return f"NVIDIA: {util}% util | Mem: {int(used) / 1024:.1f}GB / {int(total) / 1024:.1f}GB | {temp}°C"
         except Exception:
@@ -263,8 +263,8 @@ def get_top_processes():
     try:
         # Use ps to get command and resident memory (rss)
         cmd = ["ps", "-eo", "comm,rss", "--no-headers"]
-        res = subprocess.run(cmd, capture_output=True, text=True)
-        if res.returncode == 0:
+        res = run_command(cmd, capture=True, timeout=10)
+        if res.ok:
             lines = res.stdout.strip().split("\n")
             agg_mem = {}
             for line in lines:

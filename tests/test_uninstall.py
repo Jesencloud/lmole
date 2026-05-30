@@ -244,7 +244,7 @@ def test_execute_uninstall_dnf(mock_run, mock_run_cmd, test_env):
         ["dnf", "remove", "-y", "heavy-app"], use_sudo=True, capture=True
     )
     # Check that pkill was called since we mocked pgrep to succeed
-    assert any("pkill" in str(call) for call in mock_run.call_args_list)
+    assert any("pkill" in str(call) for call in mock_run_cmd.call_args_list)
 
 
 def test_get_app_localized_name(test_env):

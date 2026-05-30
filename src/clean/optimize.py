@@ -1,7 +1,6 @@
 import os
 import shutil
 import sqlite3
-import subprocess
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -96,15 +95,17 @@ def run_vacuum_all(dry_run=False):
 def run_fstrim():
     if not shutil.which("fstrim"):
         return None
-    run_command(["fstrim", "-av"], use_sudo=True, capture=True)
-    return "SSD partitions trimmed (fstrim)"
+    if run_command(["fstrim", "-av"], use_sudo=True, capture=True).ok:
+        return "SSD partitions trimmed (fstrim)"
+    return None
 
 
 def run_fccache():
     if not shutil.which("fc-cache"):
         return None
-    run_command(["fc-cache"], capture=True)
-    return "System font cache refreshed"
+    if run_command(["fc-cache"], capture=True).ok:
+        return "System font cache refreshed"
+    return None
 
 
 def run_dns_flush():
@@ -115,8 +116,9 @@ def run_dns_flush():
         dns_cmd = ["nscd", "-i", "hosts"]
     if not dns_cmd:
         return None
-    run_command(dns_cmd, use_sudo=True, capture=True)
-    return "DNS resolver cache flushed"
+    if run_command(dns_cmd, use_sudo=True, capture=True).ok:
+        return "DNS resolver cache flushed"
+    return None
 
 
 def run_zombie_cleanup(dry_run=False):
@@ -156,13 +158,10 @@ def run_zombie_cleanup(dry_run=False):
 def run_memory_opt():
     if not has_sudo():
         return None
-    subprocess.Popen(["sync"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    subprocess.run(
-        ["sudo", "bash", "-c", "echo 1 > /proc/sys/vm/drop_caches"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    return "PageCache released (Memory relief)"
+    run_command(["sync"], capture=True)
+    if run_command(["bash", "-c", "echo 1 > /proc/sys/vm/drop_caches"], use_sudo=True, capture=True).ok:
+        return "PageCache released (Memory relief)"
+    return None
 
 
 def run_thumbnail_cleanup():

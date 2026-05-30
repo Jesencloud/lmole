@@ -1,10 +1,10 @@
 import os
 import shutil
-import subprocess
 import time
 from pathlib import Path
 
 from ..core.file_ops import bytes_to_human, get_size, safe_remove
+from ..core.system import run_command
 
 
 def clean_trash(dry_run=False):
@@ -26,8 +26,8 @@ def clean_trash(dry_run=False):
                     return size, 1, 1
             return 0, 0, 0
 
-        res = subprocess.run(["gio", "trash", "--empty"], capture_output=True)
-        if res.returncode == 0:
+        res = run_command(["gio", "trash", "--empty"], capture=True, timeout=30)
+        if res.ok:
             print("  \033[0;32m✓\033[0m User Trash emptied")
             return 0, 1, 1
 

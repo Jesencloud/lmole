@@ -2,7 +2,6 @@ import json
 import os
 import platform
 import shutil
-import subprocess
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -12,6 +11,7 @@ from ..ui.navigator import AnalyzeSelector, ConfirmSelector, TopFilesSelector
 from ..ui.tui import show_banner
 from .constants import BLUE, CYAN, MAGENTA, YELLOW
 from .file_ops import bytes_to_human, get_size, safe_remove
+from .system import run_command
 
 
 # --- Internal Cache System ---
@@ -64,8 +64,8 @@ def get_rust_scan_data(path: Path) -> dict[str, Any] | None:
         return cached
 
     try:
-        res = subprocess.run([str(binary), str(path)], capture_output=True, text=True)
-        if res.returncode == 0:
+        res = run_command([str(binary), str(path)], capture=True, timeout=300)
+        if res.ok:
             data = json.loads(res.stdout)
             ScanCache.set(path, data)
             return data
@@ -312,7 +312,7 @@ def run_deep_analysis(target_path: Path = None):
         elif action == "OPEN":
             path = results[idx]["path"]
             parent = path.parent if path.exists() else path
-            subprocess.run(["xdg-open", str(parent)], capture_output=True)
+            run_command(["xdg-open", str(parent)], capture=True, timeout=10)
         elif action == "DRILL_DOWN":
             item = results[idx]
             if item.get("is_smart"):
@@ -362,9 +362,9 @@ def run_deep_analysis(target_path: Path = None):
 
                 if is_archive or is_exec:
                     # Open parent directory instead for safety
-                    subprocess.run(["xdg-open", str(p.parent)], capture_output=True)
+                    run_command(["xdg-open", str(p.parent)], capture=True, timeout=10)
                 else:
-                    subprocess.run(["xdg-open", str(p)], capture_output=True)
+                    run_command(["xdg-open", str(p)], capture=True, timeout=10)
         elif action == "DELETE_BATCH":
             selected_idxs = idx  # action was DELETE_BATCH, idx contains the list
             total_selected_size = sum(results[i]["size"] for i in selected_idxs)
@@ -383,4 +383,4 @@ def run_deep_analysis(target_path: Path = None):
             for s_idx in selected_idxs:
                 p = results[s_idx]["path"]
                 parent = p.parent if p.exists() else p
-                subprocess.run(["xdg-open", str(parent)], capture_output=True)
+                run_command(["xdg-open", str(parent)], capture=True, timeout=10)

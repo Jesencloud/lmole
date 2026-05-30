@@ -71,6 +71,14 @@ Today's session focused on reaching the pinnacle of TUI performance, achieving a
 *   **Update Regression Tests**: Added focused tests for newer, equal, older, and invalid remote versions, including assertions that the install script is not run for downgrade or invalid-version cases.
 *   **Verification**: Confirmed the update hardening with `ruff check src tests` and the full pytest suite (`81 passed`).
 
+### 10. Unified Command Execution Layer
+*   **CommandResult Contract**: Reworked `core.system.run_command()` to always return a structured `CommandResult` with `ok`, `returncode`, `stdout`, `stderr`, `error`, and `timed_out` fields instead of mixing raw `CompletedProcess` objects and `None`.
+*   **Timeout Support**: Added a default command timeout plus per-call overrides for short probes such as `pgrep`, `xdg-open`, `docker info`, `nvidia-smi`, and `ps`, preventing command hangs from blocking cleanup or status flows indefinitely.
+*   **Centralized Subprocess Usage**: Migrated cleanup, status, analyzer, trash, Docker/Podman, package-manager, and uninstaller command calls onto `run_command()` so success/failure semantics are consistent across modules.
+*   **Accurate Success Reporting**: Tightened Snap, package-manager, journal, Flatpak-unused, fstrim, font-cache, DNS, memory, Docker, Podman, and Multipass tasks so they only report success or increment counters when `CommandResult.ok` is true.
+*   **Command Layer Tests**: Added direct tests for successful, failed, and timed-out command results, and updated existing tests to assert the unified command layer instead of raw `subprocess.run()` details.
+*   **Verification**: Confirmed the command-layer refactor with `ruff check src tests` and the full pytest suite (`84 passed`).
+
 ---
 
 # Daily Modification Report - 2026-05-29

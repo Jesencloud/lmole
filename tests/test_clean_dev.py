@@ -25,8 +25,10 @@ def test_clean_tool_cache_dry_run():
 def test_clean_docker_execution(mock_sub_run, mock_run_cmd, mock_which):
     """Verify docker cleanup logic and sudo detection."""
     mock_which.return_value = "/usr/bin/docker"
-    mock_sub_run.return_value = MagicMock(returncode=1)
-    mock_run_cmd.return_value = MagicMock(returncode=0)
+    mock_run_cmd.side_effect = [
+        MagicMock(returncode=1, ok=False),
+        MagicMock(returncode=0, ok=True),
+    ]
 
     size, items = clean_docker(dry_run=False)
     assert items == 1

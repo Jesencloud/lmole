@@ -129,7 +129,7 @@ def clean_flatpak_unused(dry_run=False):
             print("  \033[0;32m✓\033[0m Flatpak runtimes would be checked")
             return 0, 0
         res = run_command(["flatpak", "uninstall", "--unused", "-y"], use_sudo=False, capture=True)
-        if res and res.stdout and "Uninstalling" in res.stdout:
+        if res.ok and res.stdout and "Uninstalling" in res.stdout:
             freed = parse_size_from_text(res.stdout)
             msg = f"  \033[0;32m✓\033[0m Cleaned unused Flatpak runtimes ({bytes_to_human(freed)})"
             print(msg)

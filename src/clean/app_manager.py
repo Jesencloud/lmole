@@ -111,10 +111,10 @@ class UninstallManager:
                     batch_size = 500
                     for i in range(0, len(desktop_files), batch_size):
                         batch = desktop_files[i : i + batch_size]
-                        res = subprocess.run(
+                        res = system.run_command(
                             ["rpm", "-qf", "--queryformat", "%{NAME}\n"] + batch,
-                            capture_output=True,
-                            text=True,
+                            capture=True,
+                            timeout=60,
                         )
                         if res.stdout:
                             for line in res.stdout.splitlines():
@@ -129,12 +129,12 @@ class UninstallManager:
         if os_id in ("fedora", "rhel", "centos") and shutil.which("rpm"):
             try:
                 # Get all installed packages with their size and install time
-                res = subprocess.run(
+                res = system.run_command(
                     ["rpm", "-qa", "--queryformat", "%{NAME}\t%{SIZE}\t%{INSTALLTIME}\n"],
-                    capture_output=True,
-                    text=True,
+                    capture=True,
+                    timeout=60,
                 )
-                if res.returncode == 0:
+                if res.ok:
                     for line in res.stdout.splitlines():
                         parts = line.split("\t")
                         if len(parts) >= 3:
@@ -162,12 +162,12 @@ class UninstallManager:
         # 3. Flatpak Scan
         if shutil.which("flatpak"):
             try:
-                res = subprocess.run(
+                res = system.run_command(
                     ["flatpak", "list", "--app", "--columns=name,application,size,installation"],
-                    capture_output=True,
-                    text=True,
+                    capture=True,
+                    timeout=60,
                 )
-                if res.returncode == 0:
+                if res.ok:
                     for line in res.stdout.splitlines():
                         parts = line.split("\t")
                         if len(parts) >= 3:
@@ -289,13 +289,13 @@ class UninstallManager:
             import contextlib
 
             with contextlib.suppress(OSError, subprocess.SubprocessError):
-                subprocess.run(["flatpak", "kill", app["id"]], capture_output=True)
+                system.run_command(["flatpak", "kill", app["id"]], capture=True, timeout=20)
 
         for proc in all_process_names:
             try:
-                res = subprocess.run(["pgrep", "-x", proc], capture_output=True)
-                if res.returncode == 0:
-                    subprocess.run(["pkill", "-9", "-x", proc], capture_output=True)
+                res = system.run_command(["pgrep", "-x", proc], capture=True, timeout=5)
+                if res.ok:
+                    system.run_command(["pkill", "-9", "-x", proc], capture=True, timeout=5)
                     time.sleep(0.5)
             except (OSError, subprocess.SubprocessError):
                 pass
@@ -345,7 +345,7 @@ def run_uninstall():
             is_running = False
             for proc in (app["id"], app["name"].lower()):
                 try:
-                    if subprocess.run(["pgrep", "-x", proc], capture_output=True).returncode == 0:
+                    if system.run_command(["pgrep", "-x", proc], capture=True, timeout=5).ok:
                         is_running = True
                         break
                 except (OSError, subprocess.SubprocessError):

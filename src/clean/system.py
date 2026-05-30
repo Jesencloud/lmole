@@ -20,12 +20,13 @@ def clean_snaps(dry_run=False):
             if "disabled" in line:
                 parts = line.split()
                 if len(parts) >= 3:
-                    run_command(
+                    res = run_command(
                         ["snap", "remove", parts[0], "--revision", parts[2]],
                         use_sudo=True,
                         capture=True,
                     )
-                    count += 1
+                    if res.ok:
+                        count += 1
 
         if count > 0:
             print(f"  \033[0;32m✓\033[0m Removed {count} old Snap revisions")
@@ -60,12 +61,12 @@ def clean_package_manager(dry_run=False):
         return freed, 0, 1
 
     res = run_command(cmd, use_sudo=True, capture=True)
-    if res and res.stdout:
+    if res.ok and res.stdout:
         freed += parse_size_from_text(res.stdout)
         print(f"  \033[0;32m✓\033[0m Cleaned {desc} ({bytes_to_human(freed)})")
         return freed, 1, 1
 
-    if desc == "APT cache":  # apt-get clean is silent
+    if res.ok and desc == "APT cache":  # apt-get clean is silent
         print(f"  \033[0;32m✓\033[0m Cleaned {desc}")
         return freed, 1, 1
 
@@ -80,7 +81,7 @@ def clean_journal(dry_run=False):
             return 0, 0, 1
 
         res = run_command(["journalctl", "--vacuum-size=1M"], use_sudo=True, capture=True)
-        if res and res.stdout:
+        if res.ok and res.stdout:
             freed = parse_size_from_text(res.stdout)
             if freed > 0:
                 print(f"  \033[0;32m✓\033[0m Vacuumed journal logs ({bytes_to_human(freed)})")

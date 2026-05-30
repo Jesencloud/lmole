@@ -1,5 +1,4 @@
 import shutil
-import subprocess
 from pathlib import Path
 
 from ..core.constants import DEV_CACHES
@@ -47,11 +46,8 @@ def clean_docker(dry_run=False):
             print("  \033[0;32m✓\033[0m Docker (unused images/volumes) would be pruned")
             return 0, 1
         use_sudo = True
-        try:
-            if subprocess.run(["docker", "info"], capture_output=True).returncode == 0:
-                use_sudo = False
-        except Exception:
-            pass
+        if run_command(["docker", "info"], capture=True, timeout=10).ok:
+            use_sudo = False
         res = run_command(
             ["docker", "system", "prune", "-f", "--volumes"], use_sudo=use_sudo, capture=True
         )
