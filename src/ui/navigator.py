@@ -386,7 +386,7 @@ class AnalyzeSelector:
                         except Exception:
                             pass
                     elif key in Navigator.ENTER:
-                        return "OPEN_ITEM", self.selected_index
+                        return "DRILL_DOWN", self.selected_index
                     elif len(key) == 1 and key.lower() == "s":
                         self.sort_reverse = not self.sort_reverse
                         self._sort_items()
