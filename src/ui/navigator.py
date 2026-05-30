@@ -289,18 +289,17 @@ class AnalyzeSelector:
                 f"{cursor} {checkbox_str}{bar_str}{item['percent']:>5.1f}%  |  {icon} {style}{name_padded}{RESET}  {WHITE}{bytes_to_human(item['size']):>12}{RESET}{age_str}\033[K\n"
             )
 
-        buf.append("\n" + "-" * (columns - 2) + "\033[K\n")
         order_icon = "↓" if self.sort_reverse else "↑"
         page_info = f" Page {self.current_page + 1}/{total_pages} |" if total_pages > 1 else ""
 
         if self.can_select:
-            buf.append(
-                f"\033[1;90m {page_info} ↑↓←→ | Num/Space: Select | A: All | ←: Back | Enter: Open | F: Dir | Del | R | S: Sort {order_icon} | ESC\033[0m\033[K\n"
-            )
+            prompt = f" {page_info} ↑↓←→ | Num/Space: Select | A: All | ←: Back | Enter: Open | F: Dir | Del | R | S: Sort {order_icon} | ESC"
         else:
-            buf.append(
-                f"\033[1;90m {page_info} ↑↓: Nav | ←: Back | →: Open | F: Dir | R | S: Sort {order_icon} | ESC\033[0m\033[K\n"
-            )
+            prompt = f" {page_info} ↑↓: Nav | ←: Back | →: Open | F: Dir | R | S: Sort {order_icon} | ESC"
+
+        # Match separator width to prompt length (excluding ANSI codes)
+        buf.append("\n" + "-" * len(prompt) + "\033[K\n")
+        buf.append(f"\033[1;90m{prompt}\033[0m\033[K\n")
 
         if self.selected_items:
             buf.append("\n \033[1;35m☉ Selected Items to Remove:\033[0m\033[K\n")
