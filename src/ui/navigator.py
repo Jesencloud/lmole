@@ -293,13 +293,21 @@ class AnalyzeSelector:
         page_info = f" Page {self.current_page + 1}/{total_pages} |" if total_pages > 1 else ""
 
         if self.can_select:
-            prompt = f" {page_info} ↑↓←→ | Num/Space: Select | A: All | ←: Back | Enter: Open | F: Dir | Del | R | S: Sort {order_icon} | ESC"
+            prompts = [
+                f" {page_info} ↑↓:Move | ←:Back | Enter/→:Enter | Spc/0-9:Toggle | A:Page",
+                f" {' ' * len(page_info)} Del:Trash | F:Open Folder | R:Reload | S:Sort {order_icon} | ESC:Exit"
+            ]
         else:
-            prompt = f" {page_info} ↑↓: Nav | ←: Back | →: Open | F: Dir | R | S: Sort {order_icon} | ESC"
+            prompts = [
+                f" {page_info} ↑↓:Move | ←:Back | Enter/→:Enter",
+                f" {' ' * len(page_info)} F:Open Folder | R:Reload | S:Sort {order_icon} | ESC:Exit"
+            ]
 
         # Match separator width to prompt length (excluding ANSI codes)
-        buf.append("\n" + "-" * len(prompt) + "\033[K\n")
-        buf.append(f"\033[1;90m{prompt}\033[0m\033[K\n")
+        max_len = max(len(p) for p in prompts)
+        buf.append("\n" + "-" * max_len + "\033[K\n")
+        for p in prompts:
+            buf.append(f"\033[1;90m{p}\033[0m\033[K\n")
 
         if self.selected_items:
             buf.append("\n \033[1;35m☉ Selected Items to Remove:\033[0m\033[K\n")
