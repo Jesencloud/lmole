@@ -378,15 +378,15 @@ def run_uninstall():
 
         if ch in ("\r", "\n"):
             # Ensure sudo session (require password)
-            print()  # Ensure sudo prompt is on a new line
+            from ..core.constants import GRAY, RED, YELLOW
+            print(f"\n {GRAY}🔒 Authorizing removal (Ctrl+C to cancel)...{RESET}")
             from ..core.system import SUDO_CANCELLED, ensure_sudo_session
 
             if not ensure_sudo_session():
-                from ..core.constants import RED, YELLOW
                 if SUDO_CANCELLED:
-                    print(f"\n\n {YELLOW}⚠️  Uninstall cancelled by user.{RESET}")
+                    print(f"\n {YELLOW}⚠️  Uninstall cancelled by user.{RESET}")
                 else:
-                    print(f"\n\n {RED}✗{RESET} Authorization failed. Uninstall cancelled.")
+                    print(f"\n {RED}✗{RESET} Authorization failed. Uninstall cancelled.")
                 if not Navigator.wait_for_return():
                     break
                 continue
