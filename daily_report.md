@@ -63,6 +63,7 @@
 *   **Conservative App Retention**: Kept ordinary user-facing GNOME apps visible, such as `gnome-calculator`, instead of filtering every package that starts with `gnome-`.
 *   **Regression Coverage**: Added uninstall scan tests proving GNOME system components are hidden while user GNOME apps remain selectable.
 *   **System Utility Refinement**: Hid additional GNOME integration utilities from uninstall results, including Browser Connector, Color Manager, Disk Utility, Initial Setup, Logs, Online Accounts, and System Monitor, while keeping user apps such as Calendar, Characters, Clocks, Connections, Contacts, Font Viewer, and Maps visible.
+*   **Input Method Protection**: Hid IBus language engine packages such as `ibus-libpinyin`, `ibus-hangul`, `ibus-chewing`, and `ibus-anthy` from the uninstall list because they are input-method framework components rather than standalone applications.
 
 # Daily Modification Report - 2026-05-30
 

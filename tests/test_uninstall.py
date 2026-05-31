@@ -213,6 +213,10 @@ def test_run_full_scan_skips_system_components(mock_run, mock_which):
             "nautilus\t200000000\t1700000000\n"
             "gvfs\t200000000\t1700000000\n"
             "dconf\t200000000\t1700000000\n"
+            "ibus-libpinyin\t200000000\t1700000000\n"
+            "ibus-hangul\t200000000\t1700000000\n"
+            "ibus-chewing\t200000000\t1700000000\n"
+            "ibus-anthy\t200000000\t1700000000\n"
             "xdg-desktop-portal\t200000000\t1700000000\n"
             "xdg-desktop-portal-gnome\t200000000\t1700000000\n"
         ),

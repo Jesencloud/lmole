@@ -73,6 +73,7 @@ class UninstallManager:
             "gnome-settings-daemon",
             "gnome-shell",
             "gnome-software",
+            "ibus",
             "kernel",
             "kmod",
             "kwin",
