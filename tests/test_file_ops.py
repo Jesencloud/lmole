@@ -52,6 +52,19 @@ def test_safe_remove_prevents_system_deletion(test_env):
     assert "whitelisted" in message.lower()
 
 
+def test_safe_remove_prevents_sensitive_linux_app_data(test_env):
+    profile_dir = test_env / ".mozilla/firefox/profile.default"
+    profile_dir.mkdir(parents=True)
+    login_db = profile_dir / "logins.json"
+    login_db.write_text("{}")
+
+    success, message = safe_remove(profile_dir, use_trash=False)
+
+    assert success is False
+    assert "whitelisted" in message.lower()
+    assert login_db.exists()
+
+
 def test_safe_remove_deletion(test_env):
     """Verify safe_remove works for non-protected test files."""
     test_file = test_env / "temp_artifact.log"

@@ -31,3 +31,26 @@ def test_whitelist_normalization(test_env):
     # Relative paths or trailing slashes should still match
     assert is_protected(str(folder) + "/") is True
     assert is_protected(folder) is True
+
+
+def test_linux_sensitive_app_data_is_protected(test_env):
+    sensitive_paths = [
+        test_env / ".ssh/id_ed25519",
+        test_env / ".gnupg/private-keys-v1.d/key.key",
+        test_env / ".mozilla/firefox/profile.default/logins.json",
+        test_env / ".config/google-chrome/Default/Login Data",
+        test_env / ".config/Bitwarden/data.json",
+        test_env / ".config/fcitx5/profile",
+        test_env / ".local/share/DBeaverData/workspace6/General/.dbeaver/credentials-config.json",
+        test_env / ".config/Code/User/settings.json",
+        test_env / ".var/app/org.mozilla.firefox/.mozilla/firefox/profile.default/logins.json",
+        test_env / ".var/app/org.keepassxc.KeePassXC/config/keepassxc.ini",
+    ]
+
+    for path in sensitive_paths:
+        assert is_protected(path) is True
+
+
+def test_linux_sensitive_app_data_does_not_protect_unrelated_paths(test_env):
+    assert is_protected(test_env / ".cache/some-app/cache.db") is False
+    assert is_protected(test_env / ".config/my-normal-app/config.json") is False

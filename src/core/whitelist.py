@@ -24,6 +24,73 @@ DEFAULT_CRITICAL_PATHS = [
     "/var",
 ]
 
+LINUX_PROTECTED_HOME_PATHS = [
+    # Credentials and encryption material
+    ".ssh",
+    ".gnupg",
+    ".pki",
+    ".password-store",
+    ".local/share/keyrings",
+    # Browser profiles
+    ".mozilla",
+    ".config/google-chrome",
+    ".config/chromium",
+    ".config/BraveSoftware",
+    ".config/microsoft-edge",
+    ".config/vivaldi",
+    ".config/opera",
+    # Password managers and authenticators
+    ".config/Bitwarden",
+    ".config/1Password",
+    ".config/keepassxc",
+    ".config/KeePassXC",
+    ".local/share/keepassxc",
+    ".local/share/KeePassXC",
+    # Input methods and personal dictionaries
+    ".config/fcitx",
+    ".config/fcitx5",
+    ".config/ibus",
+    ".local/share/fcitx5",
+    ".local/share/ibus",
+    ".local/share/rime",
+    # Wallets and crypto tools
+    ".electrum",
+    ".config/Electrum",
+    ".config/Exodus",
+    ".config/Ledger Live",
+    ".config/Trezor",
+    # Database clients and workspaces
+    ".local/share/DBeaverData",
+    ".config/DBeaverData",
+    ".pgadmin",
+    ".config/pgadmin",
+    ".config/JetBrains",
+    ".local/share/JetBrains",
+    # IDE/editor user config
+    ".config/Code",
+    ".config/Code - OSS",
+    ".config/VSCodium",
+    ".config/Cursor",
+    ".config/zed",
+]
+
+LINUX_PROTECTED_FLATPAK_APP_IDS = [
+    "app.zen_browser.zen",
+    "com.bitwarden.desktop",
+    "com.brave.Browser",
+    "com.google.Chrome",
+    "com.microsoft.Edge",
+    "com.vivaldi.Vivaldi",
+    "io.github.ungoogled_software.ungoogled_chromium",
+    "md.obsidian.Obsidian",
+    "org.chromium.Chromium",
+    "org.gnome.World.Secrets",
+    "org.keepassxc.KeePassXC",
+    "org.mozilla.firefox",
+    "org.mozilla.Thunderbird",
+    "org.pgadmin.pgadmin4",
+]
+
 
 def _ensure_config():
     config_dir = get_config_dir()
@@ -104,6 +171,9 @@ def is_protected(path) -> bool:
         if path == cp_path or cp_path in path.parents:
             return True
 
+    if is_sensitive_linux_app_data(path):
+        return True
+
     # 3. Check User Whitelist
     whitelist = get_whitelist()
     for protected in whitelist:
@@ -116,4 +186,20 @@ def is_protected(path) -> bool:
                 return True
         except Exception:
             continue
+    return False
+
+
+def is_sensitive_linux_app_data(path: Path) -> bool:
+    """Protect Linux user data that should not be removed as app cache/residue."""
+    home = Path.home()
+    protected_paths = [home / rel for rel in LINUX_PROTECTED_HOME_PATHS]
+    protected_paths.extend(home / ".var/app" / app_id for app_id in LINUX_PROTECTED_FLATPAK_APP_IDS)
+
+    for protected in protected_paths:
+        try:
+            prot_path = protected.expanduser().resolve()
+        except OSError:
+            prot_path = protected.expanduser().absolute()
+        if path == prot_path or prot_path in path.parents:
+            return True
     return False

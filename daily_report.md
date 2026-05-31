@@ -24,6 +24,12 @@
 *   **History Tests**: Added parser and renderer coverage for session logs, legacy ungrouped logs, failed rows, skipped rows, and size aggregation.
 *   **Uninstall History Fix**: `execute_uninstall()` now records `uninstall <app>` session markers and package removal events, so app removals with no residue paths still appear in `topo history`.
 
+### 4. Linux App Data Protection Model
+*   **Sensitive Data Rules**: Added Linux-specific protected data paths for SSH/GPG credentials, keyrings, password managers, browser profiles, input methods, wallets, database clients, and IDE/editor configuration.
+*   **Flatpak App Protection**: Added protected `~/.var/app/<app-id>` entries for sensitive Flatpak apps such as Firefox, Chromium/Chrome/Brave/Edge, Bitwarden, KeePassXC, Thunderbird, and pgAdmin.
+*   **Unified Enforcement**: Routed the protection through `is_protected()`, so `safe_remove()`, analyze deletion, uninstall residue cleanup, and cache cleanup all share the same sensitive-data guard.
+*   **Protection Tests**: Added regression coverage proving sensitive profile/config paths are blocked while ordinary app cache/config paths remain removable.
+
 # Daily Modification Report - 2026-05-30
 
 ## Project: topo (Topo) - High-Performance Input & Flicker-Free UI
