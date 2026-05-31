@@ -9,6 +9,7 @@ from .clean.project import run_purge
 from .clean.runner import run_clean
 from .core import system
 from .core.analyze import run_deep_analysis
+from .core.history import show_history
 from .core.status import show_status
 from .core.whitelist import add_to_whitelist, remove_from_whitelist
 from .manage.install import run_install_link
@@ -47,6 +48,7 @@ Examples:
   topo clean           Run one-key safe cleanup
   topo analyze         Start interactive disk usage explorer
   topo status          Check system health and metrics
+  topo history         Show recent cleanup deletion history
   topo update          Upgrade to the latest version
   topo whitelist list  View currently protected paths
   topo --dry-run clean Preview files to be cleaned without deleting
@@ -64,6 +66,8 @@ Examples:
     subparsers.add_parser("optimize", help="Run system maintenance (fstrim, databases, etc.)")
     subparsers.add_parser("analyze", help="Interactive disk usage explorer")
     subparsers.add_parser("status", help="Monitor system health and resource usage")
+    history_parser = subparsers.add_parser("history", help="Show recent deletion history")
+    history_parser.add_argument("--limit", type=int, default=10, help="Number of sessions to show")
 
     # --- Management ---
     link_parser = subparsers.add_parser(
@@ -181,6 +185,9 @@ Examples:
 
     if args.command == "status":
         show_status()
+
+    if args.command == "history":
+        show_history(limit=max(args.limit, 1))
 
     if args.command == "optimize":
         print("\033[1;90m🔒 Authorizing optimization tasks (Ctrl+C to cancel)...\033[0m")

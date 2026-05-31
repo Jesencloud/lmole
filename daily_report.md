@@ -16,6 +16,13 @@
 *   **Symlink Target Protection**: Tightened the validation tests around symlink targets so links pointing into critical system paths are rejected while broken user-owned symlinks remain removable as links.
 *   **Single Deletion Gate**: Removed duplicated whitelist/critical-path checks from `safe_remove()` so analyze deletion, uninstall residue cleanup, and cache cleanup all rely on the same validation policy.
 
+### 3. Cleanup History Summary
+*   **History Command**: Added `topo history --limit N` to summarize recent deletion audit sessions from `deletions.log`.
+*   **Session Boundaries**: `run_clean()` now records `started` and `ended` session markers after authorization succeeds, allowing history output to group cleanup operations by run.
+*   **Summary Metrics**: History rendering reports removed, trashed, skipped, failed, and reclaimed size totals, with a short tail of recent paths per session.
+*   **Legacy Log Support**: Existing deletion log rows without session markers are grouped into a `legacy` history block instead of being ignored.
+*   **History Tests**: Added parser and renderer coverage for session logs, legacy ungrouped logs, failed rows, skipped rows, and size aggregation.
+
 # Daily Modification Report - 2026-05-30
 
 ## Project: topo (Topo) - High-Performance Input & Flicker-Free UI

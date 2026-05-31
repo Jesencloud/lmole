@@ -14,6 +14,7 @@ from ..core.constants import (
     YELLOW,
 )
 from ..core.file_ops import bytes_to_human
+from ..core.history import record_history_session
 from .apps import clean_apps_deep, proactive_app_detection
 from .dev import clean_developer_tools
 from .system import clean_journal, clean_package_manager
@@ -39,6 +40,9 @@ def run_clean(dry_run=False):
             return
         else:
             print(f" {GREEN}✓{RESET} Authorization successful.\n")
+
+    session_command = "clean --dry-run" if dry_run else "clean"
+    record_history_session(session_command, "started")
 
     total_size = 0
     total_items = 0
@@ -109,3 +113,4 @@ def run_clean(dry_run=False):
         print(f"\n{GRAY}ℹ️  Run without --dry-run to actually delete these files.{RESET}")
     else:
         ScanCache.clear()
+    record_history_session(session_command, "ended")
