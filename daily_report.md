@@ -22,6 +22,7 @@
 *   **Summary Metrics**: History rendering reports removed, trashed, skipped, failed, and reclaimed size totals, with a short tail of recent paths per session.
 *   **Legacy Log Support**: Existing deletion log rows without session markers are grouped into a `legacy` history block instead of being ignored.
 *   **History Tests**: Added parser and renderer coverage for session logs, legacy ungrouped logs, failed rows, skipped rows, and size aggregation.
+*   **Uninstall History Fix**: `execute_uninstall()` now records `uninstall <app>` session markers and package removal events, so app removals with no residue paths still appear in `topo history`.
 
 # Daily Modification Report - 2026-05-30
 

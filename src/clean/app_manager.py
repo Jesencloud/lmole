@@ -11,7 +11,13 @@ from typing import Any
 from ..core import system
 from ..core.analyze import ScanCache
 from ..core.constants import BOLD, GRAY, GREEN, MAGENTA, RED, RESET, YELLOW
-from ..core.file_ops import bytes_to_human, parse_size_to_bytes, safe_remove
+from ..core.file_ops import (
+    bytes_to_human,
+    parse_size_to_bytes,
+    record_deletion_audit,
+    safe_remove,
+)
+from ..core.history import record_history_session
 from ..ui.navigator import Navigator, UninstallSelector
 
 
@@ -283,39 +289,57 @@ class UninstallManager:
 
     def execute_uninstall(self, app: dict[str, Any], paths: list[Path]):
         """Terminates app and removes all files."""
-        # 1. Kill processes
-        all_process_names = [app["id"], app["name"].lower()]
-        if app["type"] == "Flatpak":
-            import contextlib
+        app_name = str(app.get("name") or app.get("id") or "unknown")
+        session_command = f"uninstall {app_name}"
+        record_history_session(session_command, "started")
+        package_status = "failed"
+        package_event_recorded = False
+        package_mode = str(app.get("type", "package")).lower()
+        package_size = int(app.get("size_bytes") or 0)
 
-            with contextlib.suppress(OSError, subprocess.SubprocessError):
-                system.run_command(["flatpak", "kill", app["id"]], capture=True, timeout=20)
+        try:
+            # 1. Kill processes
+            all_process_names = [app["id"], app["name"].lower()]
+            if app["type"] == "Flatpak":
+                import contextlib
 
-        for proc in all_process_names:
-            try:
-                res = system.run_command(["pgrep", "-x", proc], capture=True, timeout=5)
-                if res.ok:
-                    system.run_command(["pkill", "-9", "-x", proc], capture=True, timeout=5)
-                    time.sleep(0.5)
-            except (OSError, subprocess.SubprocessError):
-                pass
+                with contextlib.suppress(OSError, subprocess.SubprocessError):
+                    system.run_command(["flatpak", "kill", app["id"]], capture=True, timeout=20)
 
-        # 2. Binary uninstall
-        if app["type"] == "Flatpak":
-            system.run_command(["flatpak", "uninstall", "-y", app["id"]], capture=True)
-        else:
-            system.run_command(["dnf", "remove", "-y", app["id"]], use_sudo=True, capture=True)
+            for proc in all_process_names:
+                try:
+                    res = system.run_command(["pgrep", "-x", proc], capture=True, timeout=5)
+                    if res.ok:
+                        system.run_command(["pkill", "-9", "-x", proc], capture=True, timeout=5)
+                        time.sleep(0.5)
+                except (OSError, subprocess.SubprocessError):
+                    pass
 
-        # 3. Path removal
-        removed_details = []
-        for p in paths:
-            success, _ = safe_remove(p, use_trash=False)
-            try:
-                removed_details.append((success, str(p.relative_to(Path.home()))))
-            except ValueError:
-                removed_details.append((success, str(p)))
+            # 2. Binary uninstall
+            if app["type"] == "Flatpak":
+                res = system.run_command(["flatpak", "uninstall", "-y", app["id"]], capture=True)
+            else:
+                res = system.run_command(
+                    ["dnf", "remove", "-y", app["id"]], use_sudo=True, capture=True
+            )
+            package_status = "removed" if res.ok else "failed"
+            record_deletion_audit(app["id"], package_mode, package_status, package_size)
+            package_event_recorded = True
 
-        return removed_details
+            # 3. Path removal
+            removed_details = []
+            for p in paths:
+                success, _ = safe_remove(p, use_trash=False)
+                try:
+                    removed_details.append((success, str(p.relative_to(Path.home()))))
+                except ValueError:
+                    removed_details.append((success, str(p)))
+
+            return removed_details
+        finally:
+            if package_status == "failed" and not package_event_recorded:
+                record_deletion_audit(app.get("id", app_name), package_mode, "failed", package_size)
+            record_history_session(session_command, "ended")
 
 
 def run_uninstall():

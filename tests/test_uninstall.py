@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 from src.clean.app_manager import UninstallManager, run_uninstall
+from src.core.history import parse_deletion_history
 
 
 def test_run_uninstall_no_apps():
@@ -245,6 +246,29 @@ def test_execute_uninstall_dnf(mock_run, mock_run_cmd, test_env):
     )
     # Check that pkill was called since we mocked pgrep to succeed
     assert any("pkill" in str(call) for call in mock_run_cmd.call_args_list)
+
+
+@patch("src.core.system.run_command")
+def test_execute_uninstall_writes_history_for_package_only(mock_run_cmd, test_env, monkeypatch):
+    log_path = test_env / "state" / "topo" / "deletions.log"
+    monkeypatch.setenv("TOPO_DELETE_LOG", str(log_path))
+    mock_run_cmd.return_value = MagicMock(ok=True)
+    mgr = UninstallManager()
+    app = {
+        "name": "NoResidue",
+        "id": "no-residue",
+        "type": "DNF",
+        "size_bytes": 2048,
+    }
+
+    details = mgr.execute_uninstall(app, [])
+
+    assert details == []
+    sessions = parse_deletion_history(log_path)
+    assert len(sessions) == 1
+    assert sessions[0].command == "uninstall NoResidue"
+    assert sessions[0].removed == 1
+    assert sessions[0].total_size == 2048
 
 
 def test_get_app_localized_name(test_env):

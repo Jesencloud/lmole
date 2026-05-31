@@ -8,6 +8,7 @@ def test_parse_session_history(tmp_path):
             [
                 "2026-05-31T10:00:00+08:00\tsession\t0\tstarted\tclean",
                 "2026-05-31T10:00:01+08:00\tpermanent\t1024\tdeleted\t/tmp/a",
+                "2026-05-31T10:00:01+08:00\tdnf\t4096\tremoved\theavy-app",
                 "2026-05-31T10:00:02+08:00\ttrash\t2048\ttrashed-gio\t/tmp/b",
                 "2026-05-31T10:00:03+08:00\tpermanent\tunknown\tfailed\t/tmp/c",
                 "2026-05-31T10:00:04+08:00\tsession\t0\tended\tclean",
@@ -20,11 +21,11 @@ def test_parse_session_history(tmp_path):
     assert len(sessions) == 1
     session = sessions[0]
     assert session.command == "clean"
-    assert session.removed == 1
+    assert session.removed == 2
     assert session.trashed == 1
     assert session.failed == 1
     assert session.skipped == 0
-    assert session.total_size == 3072
+    assert session.total_size == 7168
 
 
 def test_parse_legacy_ungrouped_history(tmp_path):

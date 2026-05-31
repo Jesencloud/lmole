@@ -3,7 +3,7 @@ from pathlib import Path
 
 from .file_ops import bytes_to_human, get_deletion_log_path, record_deletion_audit
 
-REMOVED_STATUSES = {"deleted"}
+REMOVED_STATUSES = {"deleted", "removed"}
 TRASHED_PREFIXES = ("trashed",)
 FAILED_STATUSES = {"failed"}
 SKIPPED_STATUSES = {
