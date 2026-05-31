@@ -94,6 +94,13 @@ class UninstallManager:
         {
             "dconf",
             "gdm",
+            "gnome-browser-connector",
+            "gnome-color-manager",
+            "gnome-disk-utility",
+            "gnome-initial-setup",
+            "gnome-logs",
+            "gnome-online-accounts",
+            "gnome-system-monitor",
             "gnome-terminal",
             "gvfs",
             "nautilus",

@@ -62,6 +62,7 @@
 *   **GNOME Core Component Hiding**: Extended uninstall scan filtering so GNOME desktop infrastructure such as GDM, GNOME Control Center, Settings Daemon, Software, Terminal, Nautilus, GVFS, dconf, and XDG Desktop Portal components are not presented as normal removable apps.
 *   **Conservative App Retention**: Kept ordinary user-facing GNOME apps visible, such as `gnome-calculator`, instead of filtering every package that starts with `gnome-`.
 *   **Regression Coverage**: Added uninstall scan tests proving GNOME system components are hidden while user GNOME apps remain selectable.
+*   **System Utility Refinement**: Hid additional GNOME integration utilities from uninstall results, including Browser Connector, Color Manager, Disk Utility, Initial Setup, Logs, Online Accounts, and System Monitor, while keeping user apps such as Calendar, Characters, Clocks, Connections, Contacts, Font Viewer, and Maps visible.
 
 # Daily Modification Report - 2026-05-30
 

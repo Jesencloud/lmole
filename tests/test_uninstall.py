@@ -199,9 +199,16 @@ def test_run_full_scan_skips_system_components(mock_run, mock_which):
             "nvidia-driver\t200000000\t1700000000\n"
             "kernel-core\t200000000\t1700000000\n"
             "gdm\t200000000\t1700000000\n"
+            "gnome-browser-connector\t200000000\t1700000000\n"
+            "gnome-color-manager\t200000000\t1700000000\n"
             "gnome-control-center\t200000000\t1700000000\n"
+            "gnome-disk-utility\t200000000\t1700000000\n"
+            "gnome-initial-setup\t200000000\t1700000000\n"
+            "gnome-logs\t200000000\t1700000000\n"
+            "gnome-online-accounts\t200000000\t1700000000\n"
             "gnome-settings-daemon\t200000000\t1700000000\n"
             "gnome-software\t200000000\t1700000000\n"
+            "gnome-system-monitor\t200000000\t1700000000\n"
             "gnome-terminal\t200000000\t1700000000\n"
             "nautilus\t200000000\t1700000000\n"
             "gvfs\t200000000\t1700000000\n"
@@ -224,14 +231,32 @@ def test_run_full_scan_keeps_user_gnome_apps(mock_run, mock_which):
     mock_which.side_effect = lambda x: "/usr/bin/rpm" if x == "rpm" else None
     mock_run.return_value = MagicMock(
         returncode=0,
-        stdout="gnome-calculator\t200000000\t1700000000\n",
+        stdout=(
+            "gnome-calculator\t200000000\t1700000000\n"
+            "gnome-calendar\t200000000\t1700000000\n"
+            "gnome-characters\t200000000\t1700000000\n"
+            "gnome-clocks\t200000000\t1700000000\n"
+            "gnome-connections\t200000000\t1700000000\n"
+            "gnome-contacts\t200000000\t1700000000\n"
+            "gnome-font-viewer\t200000000\t1700000000\n"
+            "gnome-maps\t200000000\t1700000000\n"
+        ),
     )
 
     mgr = UninstallManager()
     with patch("src.core.system.get_os_id", return_value="fedora"):
         apps = mgr.run_full_scan()
 
-    assert [app["id"] for app in apps] == ["gnome-calculator"]
+    assert [app["id"] for app in apps] == [
+        "gnome-calculator",
+        "gnome-calendar",
+        "gnome-characters",
+        "gnome-clocks",
+        "gnome-connections",
+        "gnome-contacts",
+        "gnome-font-viewer",
+        "gnome-maps",
+    ]
 
 
 @patch("shutil.which")
