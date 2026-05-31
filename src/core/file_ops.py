@@ -11,6 +11,30 @@ from .whitelist import is_protected
 # Global registry to track handled paths across modules
 CLEANED_PATHS: set[str] = set()
 
+_CONTROL_CHARS_RE = re.compile(r"[\x00-\x1f\x7f]")
+_CRITICAL_EXACT_PATHS = {
+    Path("/"),
+    Path("/home"),
+    Path("/mnt"),
+    Path("/media"),
+    Path("/srv"),
+}
+_CRITICAL_PREFIX_PATHS = {
+    Path("/bin"),
+    Path("/boot"),
+    Path("/dev"),
+    Path("/etc"),
+    Path("/lib"),
+    Path("/lib64"),
+    Path("/proc"),
+    Path("/root"),
+    Path("/run"),
+    Path("/sbin"),
+    Path("/sys"),
+    Path("/usr"),
+    Path("/var"),
+}
+
 
 def get_deletion_log_path() -> Path:
     """Return the audit log path for destructive file operations."""
@@ -39,6 +63,36 @@ def record_deletion_audit(
             f.write(f"{timestamp}\t{mode}\t{size}\t{status}\t{Path(path).expanduser()}\n")
     except OSError:
         pass
+
+
+def validate_path_for_deletion(path: str | Path) -> tuple[bool, str]:
+    """Validate a raw deletion target before size checks or unlink attempts."""
+    raw_text = os.fspath(path)
+    if not raw_text:
+        return False, "Path is empty"
+    if _CONTROL_CHARS_RE.search(raw_text):
+        return False, "Path contains control characters"
+    if not Path(raw_text).expanduser().is_absolute():
+        return False, "Path must be absolute"
+    if any(part == ".." for part in Path(raw_text).parts):
+        return False, "Path traversal is not allowed"
+
+    raw_path = Path(raw_text).expanduser()
+    try:
+        resolved_path = raw_path.resolve(strict=False)
+    except OSError:
+        resolved_path = raw_path.absolute()
+
+    if is_protected(resolved_path):
+        return False, "Path is whitelisted"
+    if resolved_path in _CRITICAL_EXACT_PATHS:
+        return False, "Refusing to delete critical system path"
+    for critical in _CRITICAL_PREFIX_PATHS:
+        if resolved_path == critical or critical in resolved_path.parents:
+            return False, "Refusing to delete critical system path"
+    if resolved_path == Path.home():
+        return False, "Refusing to delete critical system path"
+    return True, ""
 
 
 def register_cleaned_path(path: str | Path | None):
@@ -116,6 +170,11 @@ def safe_remove(
         resolved_path = raw_path.resolve(strict=False)
     except OSError:
         resolved_path = raw_path.absolute()
+
+    valid, reason = validate_path_for_deletion(path)
+    if not valid:
+        record_deletion_audit(raw_path, mode, "rejected-validation")
+        return False, reason
 
     if not raw_path.exists() and not raw_path.is_symlink():
         record_deletion_audit(raw_path, mode, "missing", 0)

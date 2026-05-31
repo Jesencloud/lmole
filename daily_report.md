@@ -9,6 +9,11 @@
 *   **Dry-Run Coverage**: Routed age-based cleanup, stale temp cleanup, generic app cache previews, and Cargo cache previews through the audit layer so preview runs leave an inspectable trail without deleting files.
 *   **Regression Tests**: Added coverage for permanent deletion audit rows, dry-run audit rows, XDG state path resolution, and Trash-failure fallback logging.
 
+### 2. Dangerous Path Fuzz Corpus
+*   **Linux Dangerous Path Corpus**: Added `tests/fuzz_corpus/dangerous_paths.txt` with Linux-specific deletion hazards including `/`, `/bin`, `/boot`, `/dev`, `/proc`, `/sys`, `/run`, `/home`, `/var/lib`, `/etc/passwd`, `/usr/bin/bash`, and traversal variants such as `/tmp/../etc`.
+*   **Central Deletion Validation**: Introduced `validate_path_for_deletion()` to reject empty, relative, traversal, control-character, whitelisted, and critical Linux system paths before size checks or deletion attempts.
+*   **Fuzz Regression Tests**: Added pytest coverage proving every corpus entry is rejected, generated control-character paths are blocked, and normal user-owned absolute paths remain allowed.
+
 # Daily Modification Report - 2026-05-30
 
 ## Project: topo (Topo) - High-Performance Input & Flicker-Free UI
