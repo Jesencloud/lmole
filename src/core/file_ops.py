@@ -166,10 +166,6 @@ def safe_remove(
     """Safe removal with trash support and protection checks."""
     raw_path = Path(path).expanduser()
     mode = "trash" if use_trash else "permanent"
-    try:
-        resolved_path = raw_path.resolve(strict=False)
-    except OSError:
-        resolved_path = raw_path.absolute()
 
     valid, reason = validate_path_for_deletion(path)
     if not valid:
@@ -179,14 +175,6 @@ def safe_remove(
     if not raw_path.exists() and not raw_path.is_symlink():
         record_deletion_audit(raw_path, mode, "missing", 0)
         return False, "Path does not exist"
-    if is_protected(resolved_path):
-        record_deletion_audit(raw_path, mode, "rejected-whitelist")
-        return False, "Path is whitelisted"
-
-    # Critical system paths protection
-    if resolved_path in [Path("/"), Path("/usr"), Path("/etc"), Path("/var"), Path.home()]:
-        record_deletion_audit(raw_path, mode, "rejected-critical")
-        return False, "Refusing to delete critical system path"
 
     size_bytes = get_size(raw_path)
     if dry_run:

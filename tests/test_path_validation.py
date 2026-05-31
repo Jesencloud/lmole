@@ -38,3 +38,23 @@ def test_user_owned_absolute_noncritical_path_is_allowed(test_env):
 
     assert ok is True
     assert reason == ""
+
+
+def test_symlink_to_critical_path_is_rejected(test_env):
+    link = test_env / "passwd-link"
+    link.symlink_to("/etc/passwd")
+
+    ok, reason = validate_path_for_deletion(link)
+
+    assert ok is False
+    assert reason in {"Path is whitelisted", "Refusing to delete critical system path"}
+
+
+def test_broken_symlink_under_user_path_is_allowed(test_env):
+    link = test_env / "broken-link"
+    link.symlink_to(test_env / "missing-target")
+
+    ok, reason = validate_path_for_deletion(link)
+
+    assert ok is True
+    assert reason == ""
