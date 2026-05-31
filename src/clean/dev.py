@@ -149,6 +149,7 @@ def clean_developer_tools(dry_run=False):
         if size > 1024:
             removed = dry_run
             if dry_run:
+                safe_remove(cargo_path, use_trash=False, dry_run=True)
                 print(f"  \033[0;32m✓\033[0m Cargo cache ({bytes_to_human(size)}) would be cleaned")
             else:
                 removed = safe_remove(cargo_path, use_trash=False)[0]

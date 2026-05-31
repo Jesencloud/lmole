@@ -2,6 +2,7 @@ import os
 import re
 import shutil
 import time
+from datetime import datetime
 from pathlib import Path
 
 from .system import run_command
@@ -9,6 +10,35 @@ from .whitelist import is_protected
 
 # Global registry to track handled paths across modules
 CLEANED_PATHS: set[str] = set()
+
+
+def get_deletion_log_path() -> Path:
+    """Return the audit log path for destructive file operations."""
+    if override := os.environ.get("TOPO_DELETE_LOG"):
+        return Path(override).expanduser()
+    state_home = Path(os.environ.get("XDG_STATE_HOME", "~/.local/state")).expanduser()
+    return state_home / "topo" / "deletions.log"
+
+
+def record_deletion_audit(
+    path: str | Path,
+    mode: str,
+    status: str,
+    size_bytes: int | None = None,
+) -> None:
+    """Append a best-effort deletion audit event."""
+    log_path = get_deletion_log_path()
+    try:
+        size = "unknown" if size_bytes is None else str(max(int(size_bytes), 0))
+    except (TypeError, ValueError):
+        size = "unknown"
+    timestamp = datetime.now().astimezone().isoformat(timespec="seconds")
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write(f"{timestamp}\t{mode}\t{size}\t{status}\t{Path(path).expanduser()}\n")
+    except OSError:
+        pass
 
 
 def register_cleaned_path(path: str | Path | None):
@@ -74,22 +104,35 @@ def get_size_fast(path: str | Path) -> int:
     return get_size(p)
 
 
-def safe_remove(path: str | Path, use_trash: bool = True) -> tuple[bool, str]:
+def safe_remove(
+    path: str | Path,
+    use_trash: bool = True,
+    dry_run: bool = False,
+) -> tuple[bool, str]:
     """Safe removal with trash support and protection checks."""
     raw_path = Path(path).expanduser()
+    mode = "trash" if use_trash else "permanent"
     try:
         resolved_path = raw_path.resolve(strict=False)
     except OSError:
         resolved_path = raw_path.absolute()
 
     if not raw_path.exists() and not raw_path.is_symlink():
+        record_deletion_audit(raw_path, mode, "missing", 0)
         return False, "Path does not exist"
     if is_protected(resolved_path):
+        record_deletion_audit(raw_path, mode, "rejected-whitelist")
         return False, "Path is whitelisted"
 
     # Critical system paths protection
     if resolved_path in [Path("/"), Path("/usr"), Path("/etc"), Path("/var"), Path.home()]:
+        record_deletion_audit(raw_path, mode, "rejected-critical")
         return False, "Refusing to delete critical system path"
+
+    size_bytes = get_size(raw_path)
+    if dry_run:
+        record_deletion_audit(raw_path, mode, "dry-run", size_bytes)
+        return True, "Dry run"
 
     try:
         if use_trash:
@@ -97,12 +140,15 @@ def safe_remove(path: str | Path, use_trash: bool = True) -> tuple[bool, str]:
                 shutil.which("gio")
                 and run_command(["gio", "trash", str(raw_path)], capture=True, timeout=30).ok
             ):
+                record_deletion_audit(raw_path, "trash", "trashed-gio", size_bytes)
                 return True, "Moved to trash (gio)"
             if (
                 shutil.which("trash-put")
                 and run_command(["trash-put", str(raw_path)], capture=True, timeout=30).ok
             ):
+                record_deletion_audit(raw_path, "trash", "trashed-trash-cli", size_bytes)
                 return True, "Moved to trash (trash-cli)"
+            record_deletion_audit(raw_path, "trash", "trash-failed", size_bytes)
 
         if raw_path.is_symlink() or raw_path.is_file():
             raw_path.unlink()
@@ -110,8 +156,11 @@ def safe_remove(path: str | Path, use_trash: bool = True) -> tuple[bool, str]:
             shutil.rmtree(raw_path)
         else:
             raw_path.unlink()
+        record_deletion_audit(raw_path, "permanent", "deleted", size_bytes)
         return True, "Permanently deleted"
     except OSError as e:
+        failed_mode = "permanent" if use_trash else mode
+        record_deletion_audit(raw_path, failed_mode, "failed", size_bytes)
         return False, str(e)
 
 
@@ -131,15 +180,13 @@ def clean_path_by_age(path: str | Path, days: int, dry_run: bool = False) -> tup
             if item.stat().st_atime < cutoff:
                 size = get_size(item)
                 if dry_run:
+                    safe_remove(item, use_trash=False, dry_run=True)
                     total_size += size
                     items_count += 1
                 else:
-                    if item.is_dir():
-                        shutil.rmtree(item, ignore_errors=True)
-                    else:
-                        item.unlink(missing_ok=True)
-                    total_size += size
-                    items_count += 1
+                    if safe_remove(item, use_trash=False)[0]:
+                        total_size += size
+                        items_count += 1
     except OSError:
         pass
     return total_size, items_count

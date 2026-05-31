@@ -6,6 +6,7 @@ from src.core.file_ops import (
     CLEANED_PATHS,
     bytes_to_human,
     clean_path_by_age,
+    get_deletion_log_path,
     get_size,
     is_app_running,
     parse_size_from_text,
@@ -61,6 +62,45 @@ def test_safe_remove_deletion(test_env):
 
     assert success is True
     assert not test_file.exists()
+
+
+def test_safe_remove_writes_deletion_audit(test_env, monkeypatch):
+    log_path = test_env / "state" / "topo" / "deletions.log"
+    monkeypatch.setenv("TOPO_DELETE_LOG", str(log_path))
+    test_file = test_env / "audit.log"
+    test_file.write_text("audit")
+
+    success, message = safe_remove(test_file, use_trash=False)
+
+    assert success is True
+    assert "Permanently deleted" in message
+    line = log_path.read_text().strip()
+    fields = line.split("\t")
+    assert fields[1:] == ["permanent", "5", "deleted", str(test_file)]
+
+
+def test_safe_remove_dry_run_audit_keeps_file(test_env, monkeypatch):
+    log_path = test_env / "state" / "topo" / "deletions.log"
+    monkeypatch.setenv("TOPO_DELETE_LOG", str(log_path))
+    test_file = test_env / "dry-run.log"
+    test_file.write_text("preview")
+
+    success, message = safe_remove(test_file, use_trash=False, dry_run=True)
+
+    assert success is True
+    assert message == "Dry run"
+    assert test_file.exists()
+    line = log_path.read_text().strip()
+    fields = line.split("\t")
+    assert fields[1:] == ["permanent", "7", "dry-run", str(test_file)]
+
+
+def test_deletion_log_defaults_to_xdg_state_home(test_env, monkeypatch):
+    state_home = test_env / "xdg-state"
+    monkeypatch.delenv("TOPO_DELETE_LOG", raising=False)
+    monkeypatch.setenv("XDG_STATE_HOME", str(state_home))
+
+    assert get_deletion_log_path() == state_home / "topo" / "deletions.log"
 
 
 def test_get_size_accurate(test_env):
@@ -130,11 +170,19 @@ def test_safe_remove_edge_cases(test_env):
     # Test fallback to permanent delete if trash fails
     test_file = test_env / "trash_test.txt"
     test_file.write_text("dummy")
-    with patch("shutil.which", return_value=True), patch("subprocess.run") as mock_run:
+    log_path = test_env / "state" / "topo" / "deletions.log"
+    with (
+        patch.dict("os.environ", {"TOPO_DELETE_LOG": str(log_path)}),
+        patch("shutil.which", return_value=True),
+        patch("subprocess.run") as mock_run,
+    ):
         mock_run.return_value = MagicMock(returncode=1)  # But it fails
         success, msg = safe_remove(test_file, use_trash=True)
         assert success is True
         assert "Permanently deleted" in msg
+    lines = log_path.read_text().splitlines()
+    assert lines[0].split("\t")[1:] == ["trash", "5", "trash-failed", str(test_file)]
+    assert lines[1].split("\t")[1:] == ["permanent", "5", "deleted", str(test_file)]
 
     # Test Exception handling during removal
     with patch("pathlib.Path.unlink", side_effect=OSError("mocked error")):

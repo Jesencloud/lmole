@@ -1,3 +1,14 @@
+# Daily Modification Report - 2026-05-31
+
+## Project: topo (Topo) - Deletion Audit Trail
+
+### 1. Recoverable Deletion Observability
+*   **Deletion Audit Log**: Added a best-effort deletion audit trail at `~/.local/state/topo/deletions.log`, with `TOPO_DELETE_LOG` override support for tests and custom deployments.
+*   **Unified Event Recording**: `safe_remove()` now records destructive operation outcomes including missing paths, whitelist/critical-path rejections, dry-run previews, successful Trash moves, Trash failures, permanent deletions, and deletion failures.
+*   **Trash Fallback Visibility**: When Trash tools fail and Topo falls back to permanent deletion, the audit log records both the `trash-failed` event and the final permanent deletion result.
+*   **Dry-Run Coverage**: Routed age-based cleanup, stale temp cleanup, generic app cache previews, and Cargo cache previews through the audit layer so preview runs leave an inspectable trail without deleting files.
+*   **Regression Tests**: Added coverage for permanent deletion audit rows, dry-run audit rows, XDG state path resolution, and Trash-failure fallback logging.
+
 # Daily Modification Report - 2026-05-30
 
 ## Project: topo (Topo) - High-Performance Input & Flicker-Free UI

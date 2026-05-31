@@ -82,8 +82,7 @@ def clean_system_temp(dry_run=False, min_age_days=3):
                 if st.st_mtime > cutoff or st.st_atime > cutoff:
                     continue
                 size = get_size(item)
-                # Short-circuit: dry-run counts without touching the file
-                if dry_run or safe_remove(item, use_trash=False)[0]:
+                if safe_remove(item, use_trash=False, dry_run=dry_run)[0]:
                     total_size += size
                     total_items += 1
         except OSError:

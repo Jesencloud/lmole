@@ -98,6 +98,7 @@ def clean_app_generic(name, paths, process_names=None, dry_run=False):
             found = True
             size = get_size(path)
             if dry_run:
+                safe_remove(path, use_trash=False, dry_run=True)
                 total_freed += size
                 items_cleaned += 1
                 continue
