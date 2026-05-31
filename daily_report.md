@@ -52,6 +52,12 @@
 *   **History Help Example**: Expanded `topo --help` examples to include `topo history --limit 5`.
 *   **README History Usage**: Added `topo history` commands and a cleanup history output example to the README.
 
+### 9. Duplicate Code Reduction
+*   **Critical Path Single Source**: Centralized critical Linux path constants in `whitelist.py` and reused them from `file_ops.validate_path_for_deletion()`, eliminating duplicated delete-protection lists.
+*   **Run Path Protection Alignment**: Added `/run` to the default critical path set so whitelist checks and deletion validation share the same system path policy.
+*   **Uninstall App Record Helper**: Added a shared `_app_record()` helper for DNF, Flatpak, and Snap scan results, reducing repeated dictionary construction in the uninstall scanner.
+*   **Regression Coverage**: Added coverage proving `/run/systemd` is protected through the shared whitelist policy.
+
 # Daily Modification Report - 2026-05-30
 
 ## Project: topo (Topo) - High-Performance Input & Flicker-Free UI

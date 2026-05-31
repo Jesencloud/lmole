@@ -42,6 +42,7 @@ def test_whitelist_protection(test_env):
     assert is_protected("/usr/bin") is True
     assert is_protected("/etc/shadow") is True
     assert is_protected("/boot") is True
+    assert is_protected("/run/systemd") is True
     assert is_protected(test_env / "my_docs") is False
 
 

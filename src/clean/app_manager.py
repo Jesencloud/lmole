@@ -129,6 +129,24 @@ class UninstallManager:
     def _parse_size_to_bytes(self, size_str: str) -> int:
         return parse_size_to_bytes(size_str)
 
+    @staticmethod
+    def _app_record(
+        app_id: str,
+        name: str,
+        size_bytes: int,
+        size_str: str,
+        app_type: str,
+        install_time: int = 0,
+    ) -> dict[str, Any]:
+        return {
+            "id": app_id,
+            "name": name,
+            "size_bytes": size_bytes,
+            "size_str": size_str,
+            "type": app_type,
+            "install_time": install_time,
+        }
+
     def _get_app_localized_name(self, desktop_file: Path, name: str) -> str:
         """Tries to find Name[zh_CN] or Name in .desktop file."""
         english_name = ""
@@ -224,14 +242,14 @@ class UninstallManager:
                                 continue
                             if app_id in user_app_packages or size_bytes > 100 * 1024 * 1024:
                                 apps.append(
-                                    {
-                                        "id": app_id,
-                                        "name": app_id,
-                                        "size_bytes": size_bytes,
-                                        "size_str": bytes_to_human(size_bytes),
-                                        "type": "DNF",
-                                        "install_time": install_time,
-                                    }
+                                    self._app_record(
+                                        app_id,
+                                        app_id,
+                                        size_bytes,
+                                        bytes_to_human(size_bytes),
+                                        "DNF",
+                                        install_time,
+                                    )
                                 )
             except (OSError, subprocess.SubprocessError, ValueError):
                 pass
@@ -273,14 +291,9 @@ class UninstallManager:
 
                             size_bytes = self._parse_size_to_bytes(size_str)
                             apps.append(
-                                {
-                                    "id": app_id,
-                                    "name": app_name,
-                                    "size_bytes": size_bytes,
-                                    "size_str": size_str,
-                                    "type": "Flatpak",
-                                    "install_time": install_time,
-                                }
+                                self._app_record(
+                                    app_id, app_name, size_bytes, size_str, "Flatpak", install_time
+                                )
                             )
             except (OSError, subprocess.SubprocessError):
                 pass
@@ -299,16 +312,7 @@ class UninstallManager:
                             continue
                         if self._is_system_component(app_id, app_id):
                             continue
-                        apps.append(
-                            {
-                                "id": app_id,
-                                "name": app_id,
-                                "size_bytes": 0,
-                                "size_str": "N/A",
-                                "type": "Snap",
-                                "install_time": 0,
-                            }
-                        )
+                        apps.append(self._app_record(app_id, app_id, 0, "N/A", "Snap"))
             except (OSError, subprocess.SubprocessError):
                 pass
 

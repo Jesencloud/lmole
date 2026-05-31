@@ -18,11 +18,16 @@ DEFAULT_CRITICAL_PATHS = [
     "/lib64",
     "/proc",
     "/root",
+    "/run",
     "/sbin",
     "/sys",
     "/usr",
     "/var",
 ]
+CRITICAL_PREFIX_PATHS = tuple(
+    Path(path) for path in DEFAULT_CRITICAL_PATHS if path != "/"
+)
+DELETION_CRITICAL_EXACT_PATHS = tuple(Path(path) for path in ("/", "/home", "/mnt", "/media", "/srv"))
 
 LINUX_PROTECTED_HOME_PATHS = [
     # Credentials and encryption material
@@ -152,22 +157,7 @@ def is_protected(path) -> bool:
 
     # 2. Check hardcoded critical prefixes (protects them and their children)
     # We exclude "/" here because it's handled above and shouldn't be recursive
-    critical_prefixes = [
-        "/bin",
-        "/boot",
-        "/dev",
-        "/etc",
-        "/lib",
-        "/lib64",
-        "/proc",
-        "/root",
-        "/sbin",
-        "/sys",
-        "/usr",
-        "/var",
-    ]
-    for cp in critical_prefixes:
-        cp_path = Path(cp)
+    for cp_path in CRITICAL_PREFIX_PATHS:
         if path == cp_path or cp_path in path.parents:
             return True
 

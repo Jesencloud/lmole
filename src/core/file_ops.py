@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 from .system import run_command
-from .whitelist import is_protected
+from .whitelist import CRITICAL_PREFIX_PATHS, DELETION_CRITICAL_EXACT_PATHS, is_protected
 
 # Global registry to track handled paths across modules
 CLEANED_PATHS: set[str] = set()
@@ -14,28 +14,6 @@ CACHEDIR_TAG_FILE = "CACHEDIR.TAG"
 CACHEDIR_TAG_SIGNATURE = "Signature: 8a477f597d28d172789f06886806bc55"
 
 _CONTROL_CHARS_RE = re.compile(r"[\x00-\x1f\x7f]")
-_CRITICAL_EXACT_PATHS = {
-    Path("/"),
-    Path("/home"),
-    Path("/mnt"),
-    Path("/media"),
-    Path("/srv"),
-}
-_CRITICAL_PREFIX_PATHS = {
-    Path("/bin"),
-    Path("/boot"),
-    Path("/dev"),
-    Path("/etc"),
-    Path("/lib"),
-    Path("/lib64"),
-    Path("/proc"),
-    Path("/root"),
-    Path("/run"),
-    Path("/sbin"),
-    Path("/sys"),
-    Path("/usr"),
-    Path("/var"),
-}
 
 
 def get_deletion_log_path() -> Path:
@@ -87,9 +65,9 @@ def validate_path_for_deletion(path: str | Path) -> tuple[bool, str]:
 
     if is_protected(resolved_path):
         return False, "Path is whitelisted"
-    if resolved_path in _CRITICAL_EXACT_PATHS:
+    if resolved_path in DELETION_CRITICAL_EXACT_PATHS:
         return False, "Refusing to delete critical system path"
-    for critical in _CRITICAL_PREFIX_PATHS:
+    for critical in CRITICAL_PREFIX_PATHS:
         if resolved_path == critical or critical in resolved_path.parents:
             return False, "Refusing to delete critical system path"
     if resolved_path == Path.home():
